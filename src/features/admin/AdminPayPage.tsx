@@ -3,7 +3,7 @@ import { CaregiverFilter } from '@/features/admin/CaregiverFilter';
 import { useCaregivers } from '@/features/admin/useCaregivers';
 import { useDefaultHourlyRate } from '@/features/admin/useDefaultHourlyRate';
 import { Button } from '@/components/ui/Button';
-import { AuthField } from '@/features/auth/AuthField';
+import { DateRangeFilter } from '@/features/admin/DateRangeFilter';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { InlineSpinner } from '@/components/ui/InlineSpinner';
@@ -12,6 +12,7 @@ import {
   buildPaymentSummaryText,
   calculatePaymentTotal,
   formatCurrency,
+  formatPayPeriodRange,
   formatShortDate,
 } from '@/lib/utils/payment-format';
 import { formatHours, getChicagoDateString } from '@/lib/utils/dates';
@@ -184,24 +185,12 @@ export function AdminPayPage() {
           />
 
           <div className="space-y-3 px-3 py-3 sm:px-4 sm:py-4">
-            <div className="bg-surface border-border rounded-xl border p-3">
-              <div className="grid grid-cols-2 gap-2">
-                <AuthField
-                  compact
-                  label="Start"
-                  type="date"
-                  value={periodStart}
-                  onChange={(e) => setPeriodStart(e.target.value)}
-                />
-                <AuthField
-                  compact
-                  label="End"
-                  type="date"
-                  value={periodEnd}
-                  onChange={(e) => setPeriodEnd(e.target.value)}
-                />
-              </div>
-            </div>
+            <DateRangeFilter
+              startValue={periodStart}
+              endValue={periodEnd}
+              onStartChange={setPeriodStart}
+              onEndChange={setPeriodEnd}
+            />
 
             {error ? <ErrorBanner message={error} onRetry={loadSummary} /> : null}
 
@@ -219,7 +208,7 @@ export function AdminPayPage() {
                 <div>
                   <p className="text-text-muted text-sm">Period</p>
                   <p className="font-medium">
-                    {formatShortDate(periodStart)} – {formatShortDate(periodEnd)}
+                    {formatPayPeriodRange(periodStart, periodEnd)}
                   </p>
                 </div>
 
@@ -250,8 +239,8 @@ export function AdminPayPage() {
                       <ul className="text-text-muted max-h-32 space-y-1 overflow-y-auto text-sm">
                         {entries.map((entry) => (
                           <li key={entry.id}>
-                            {formatShortDate(entry.work_date)} —{' '}
-                            {formatHours(entry.hours)}h
+                            {formatShortDate(entry.work_date)} ·{' '}
+                            {formatHours(entry.hours)} h
                           </li>
                         ))}
                       </ul>

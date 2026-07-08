@@ -1,10 +1,44 @@
 import type { CaregiverRate } from '@/types/database';
 import { getEffectiveRate } from '@/features/admin/CaregiverFilter';
-import { formatHours } from '@/lib/utils/dates';
+import { formatHours, parseDateOnly } from '@/lib/utils/dates';
 
+function formatMonthDay(y: number, m: number, d: number): string {
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'long',
+    day: 'numeric',
+  }).format(new Date(y, m - 1, d));
+}
+
+function formatMonthDayYear(y: number, m: number, d: number): string {
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(new Date(y, m - 1, d));
+}
+
+/** Compact date for entry lines within a pay period, e.g. "July 1". */
 export function formatShortDate(dateStr: string): string {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  return `${m}-${d}-${y}`;
+  const { y, m, d } = parseDateOnly(dateStr);
+  return formatMonthDay(y, m, d);
+}
+
+/** Pay period range, e.g. "July 1 – 7, 2026" or "June 28 – July 4, 2026". */
+export function formatPayPeriodRange(periodStart: string, periodEnd: string): string {
+  const start = parseDateOnly(periodStart);
+  const end = parseDateOnly(periodEnd);
+  const startFmt = formatMonthDay(start.y, start.m, start.d);
+
+  if (start.y === end.y && start.m === end.m) {
+    return `${startFmt} – ${end.d}, ${end.y}`;
+  }
+
+  if (start.y === end.y) {
+    const endFmt = formatMonthDay(end.y, end.m, end.d);
+    return `${startFmt} – ${endFmt}, ${end.y}`;
+  }
+
+  return `${formatMonthDayYear(start.y, start.m, start.d)} – ${formatMonthDayYear(end.y, end.m, end.d)}`;
 }
 
 export function formatCurrency(amount: number): string {
@@ -21,7 +55,7 @@ export function buildPaymentSummaryText(
   periodEnd: string,
   totalHours: number,
 ): string {
-  return `${formatShortDate(periodStart)} - ${formatShortDate(periodEnd)}\n${formatHours(totalHours)} hours`;
+  return `${formatPayPeriodRange(periodStart, periodEnd)}\n${formatHours(totalHours)} hours`;
 }
 
 export function calculatePaymentTotal(

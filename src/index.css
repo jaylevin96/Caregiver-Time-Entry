@@ -31,5 +31,28 @@
 
   input[type='date'] {
     min-width: 0;
+    max-width: 100%;
+  }
+}
+
+@layer components {
+  .date-input-compact {
+    @apply bg-surface-raised focus:border-accent focus:ring-accent/20 block w-full min-w-0 max-w-full rounded-md border border-transparent px-0 py-0.5 text-xs outline-none focus:border-transparent focus:ring-0;
+    box-sizing: border-box;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  .date-input-compact::-webkit-date-and-time-value {
+    min-width: 0;
+    text-align: left;
+  }
+
+  .date-input-compact::-webkit-calendar-picker-indicator {
+    width: 0.875rem;
+    height: 0.875rem;
+    margin: 0;
+    padding: 0;
+    opacity: 0.55;
   }
 }

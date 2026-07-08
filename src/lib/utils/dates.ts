@@ -79,7 +79,7 @@ export function formatWeekEndLabel(dateStr: string): string {
   const { y, m, d } = parseDateOnly(dateStr);
   return new Intl.DateTimeFormat('en-US', {
     weekday: 'short',
-    month: 'short',
+    month: 'long',
     day: 'numeric',
   }).format(new Date(y, m - 1, d));
 }
@@ -132,7 +132,7 @@ export function formatDisplayDate(dateStr: string): string {
   const { y, m, d } = parseDateOnly(dateStr);
   return new Intl.DateTimeFormat('en-US', {
     weekday: 'short',
-    month: 'short',
+    month: 'long',
     day: 'numeric',
     year: 'numeric',
   }).format(new Date(y, m - 1, d));
@@ -171,7 +171,7 @@ export function formatWeekRangeLabel(weekStart: string): string {
   const end = parseDateOnly(weekEnd);
 
   const startFmt = new Intl.DateTimeFormat('en-US', {
-    month: 'short',
+    month: 'long',
     day: 'numeric',
   }).format(new Date(start.y, start.m - 1, start.d));
 
@@ -180,7 +180,7 @@ export function formatWeekRangeLabel(weekStart: string): string {
   }
 
   const endFmt = new Intl.DateTimeFormat('en-US', {
-    month: 'short',
+    month: 'long',
     day: 'numeric',
     year: 'numeric',
   }).format(new Date(end.y, end.m - 1, end.d));
@@ -192,7 +192,7 @@ export function formatDayListLabel(dateStr: string): string {
   const { y, m, d } = parseDateOnly(dateStr);
   return new Intl.DateTimeFormat('en-US', {
     weekday: 'short',
-    month: 'short',
+    month: 'long',
     day: 'numeric',
   }).format(new Date(y, m - 1, d));
 }
