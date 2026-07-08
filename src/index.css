@@ -28,4 +28,8 @@
   #root {
     @apply min-h-dvh;
   }
+
+  input[type='date'] {
+    min-width: 0;
+  }
 }

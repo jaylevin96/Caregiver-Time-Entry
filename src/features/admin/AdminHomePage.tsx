@@ -28,13 +28,13 @@ export function AdminHomePage() {
 function AdminNav() {
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     [
-      'flex min-h-11 flex-1 flex-col items-center justify-center gap-0.5 px-1 text-[11px] font-medium',
-      isActive ? 'text-accent' : 'text-text-muted',
+      'flex min-h-[4.5rem] flex-1 touch-manipulation flex-col items-center justify-center gap-1 px-2 py-3 text-sm font-medium transition-colors',
+      isActive ? 'text-accent font-semibold' : 'text-text-muted',
     ].join(' ');
 
   return (
-    <nav className="border-border bg-surface-raised/95 supports-[backdrop-filter]:bg-surface-raised/80 border-t backdrop-blur">
-      <div className="mx-auto flex max-w-lg px-1 pb-[env(safe-area-inset-bottom)]">
+    <nav className="border-border bg-surface-raised/95 supports-[backdrop-filter]:bg-surface-raised/80 rounded-t-2xl border shadow-[0_-4px_16px_rgba(0,0,0,0.08)] backdrop-blur">
+      <div className="flex px-1">
         <NavLink to="/admin" end className={linkClass}>
           Calendar
         </NavLink>

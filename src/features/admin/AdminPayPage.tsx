@@ -165,14 +165,7 @@ export function AdminPayPage() {
   }
 
   return (
-    <div className="px-4 py-4 pb-6">
-      <div className="mb-4">
-        <h2 className="text-lg font-semibold">Pay caregiver</h2>
-        <p className="text-text-muted mt-1 text-sm">
-          Select a period, mark entries paid, then copy for payment info.
-        </p>
-      </div>
-
+    <>
       {caregiversLoading ? (
         <div className="flex justify-center py-12">
           <InlineSpinner />
@@ -190,20 +183,24 @@ export function AdminPayPage() {
             onSelect={setSelectedCaregiverId}
           />
 
-          <div className="mt-4 space-y-4">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <AuthField
-                label="Start date"
-                type="date"
-                value={periodStart}
-                onChange={(e) => setPeriodStart(e.target.value)}
-              />
-              <AuthField
-                label="End date"
-                type="date"
-                value={periodEnd}
-                onChange={(e) => setPeriodEnd(e.target.value)}
-              />
+          <div className="space-y-3 px-3 py-3 sm:px-4 sm:py-4">
+            <div className="bg-surface border-border rounded-xl border p-3">
+              <div className="grid grid-cols-2 gap-2">
+                <AuthField
+                  compact
+                  label="Start"
+                  type="date"
+                  value={periodStart}
+                  onChange={(e) => setPeriodStart(e.target.value)}
+                />
+                <AuthField
+                  compact
+                  label="End"
+                  type="date"
+                  value={periodEnd}
+                  onChange={(e) => setPeriodEnd(e.target.value)}
+                />
+              </div>
             </div>
 
             {error ? <ErrorBanner message={error} onRetry={loadSummary} /> : null}
@@ -213,7 +210,7 @@ export function AdminPayPage() {
                 <InlineSpinner size="sm" />
               </div>
             ) : activeCaregiver && periodStart && periodEnd ? (
-              <div className="border-border bg-surface-raised space-y-4 rounded-2xl border p-4">
+              <div className="border-border bg-surface-raised space-y-3 rounded-xl border p-3 sm:p-4">
                 <div>
                   <p className="text-text-muted text-sm">Caregiver</p>
                   <p className="font-medium">{activeCaregiver.display_name}</p>
@@ -232,16 +229,16 @@ export function AdminPayPage() {
                   </p>
                 ) : (
                   <>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-3">
                       <div>
                         <p className="text-text-muted text-sm">Total hours</p>
-                        <p className="text-2xl font-semibold tabular-nums">
+                        <p className="text-xl font-semibold tabular-nums">
                           {formatHours(lastPayment?.total_hours ?? totalHours)}
                         </p>
                       </div>
                       <div>
                         <p className="text-text-muted text-sm">Amount owed</p>
-                        <p className="text-2xl font-semibold tabular-nums">
+                        <p className="text-xl font-semibold tabular-nums">
                           {formatCurrency(
                             lastPayment?.total_amount ?? totalAmount,
                           )}
@@ -267,7 +264,7 @@ export function AdminPayPage() {
                     ) : null}
 
                     {summaryText ? (
-                      <pre className="border-border bg-surface whitespace-pre-wrap rounded-xl border p-3 text-sm leading-relaxed">
+                      <pre className="border-border bg-surface whitespace-pre-wrap rounded-lg border p-3 text-sm leading-relaxed">
                         {summaryText}
                       </pre>
                     ) : null}
@@ -306,6 +303,6 @@ export function AdminPayPage() {
           </div>
         </>
       )}
-    </div>
+    </>
   );
 }

@@ -53,8 +53,8 @@ export function AdminSettingsPage() {
   }, [rateInput, profile?.id, refresh, setDefaultRate]);
 
   return (
-    <div className="px-4 py-6">
-      <div className="mb-6">
+    <div className="px-3 py-3 sm:px-4 sm:py-4">
+      <div className="mb-3">
         <h2 className="text-lg font-semibold">Settings</h2>
         <p className="text-text-muted mt-1 text-sm">
           App-wide defaults for payments.
@@ -66,29 +66,28 @@ export function AdminSettingsPage() {
           <InlineSpinner />
         </div>
       ) : (
-        <div className="space-y-6">
-          <section className="border-border bg-surface-raised rounded-2xl border p-4">
+        <div className="space-y-3">
+          <section className="border-border bg-surface-raised rounded-xl border p-3 sm:p-4">
             <h3 className="font-medium">Default hourly rate</h3>
             <p className="text-text-muted mt-1 text-sm">
               Used when a caregiver has no custom rate. Set per-caregiver rates
               on the Users page.
             </p>
 
-            <div className="mt-4 flex items-end gap-3">
-              <div className="flex-1">
-                <AuthField
-                  label="Rate ($/hour)"
-                  type="number"
-                  inputMode="decimal"
-                  min={0.01}
-                  step={0.01}
-                  value={rateInput}
-                  onChange={(e) => {
-                    setRateInput(e.target.value);
-                    setSaved(false);
-                  }}
-                />
-              </div>
+            <div className="mt-3">
+              <AuthField
+                compact
+                label="Rate ($/hour)"
+                type="number"
+                inputMode="decimal"
+                min={0.01}
+                step={0.01}
+                value={rateInput}
+                onChange={(e) => {
+                  setRateInput(e.target.value);
+                  setSaved(false);
+                }}
+              />
             </div>
 
             {error ? (

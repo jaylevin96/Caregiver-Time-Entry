@@ -148,8 +148,8 @@ export function AdminUsersPage() {
   }
 
   return (
-    <div className="px-4 py-6">
-      <div className="mb-4">
+    <div className="px-3 py-3 sm:px-4 sm:py-4">
+      <div className="mb-3">
         <h2 className="text-lg font-semibold">Users</h2>
         <p className="text-text-muted mt-1 text-sm">
           Promote caregivers to admin or demote admins. Set calendar colors and
@@ -181,7 +181,7 @@ export function AdminUsersPage() {
             return (
               <li
                 key={user.id}
-                className="border-border bg-surface-raised rounded-2xl border p-4"
+                className="border-border bg-surface-raised rounded-xl border p-3 sm:p-4"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">

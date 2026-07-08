@@ -61,9 +61,10 @@ export function CaregiverRateEditor({
           : `Uses default ($${defaultRate.toFixed(2)}/hr)`}
       </p>
 
-      <div className="flex items-end gap-3">
-        <div className="flex-1">
+      <div className="flex items-end gap-2">
+        <div className="min-w-0 flex-1">
           <AuthField
+            compact
             label="Rate ($/hour)"
             type="number"
             inputMode="decimal"
@@ -79,7 +80,7 @@ export function CaregiverRateEditor({
         </div>
         <Button
           variant="secondary"
-          className="min-h-[50px] shrink-0 px-4"
+          className="min-h-10 shrink-0 px-3 text-sm"
           disabled={isBusy || unchanged}
           onClick={handleSave}
         >

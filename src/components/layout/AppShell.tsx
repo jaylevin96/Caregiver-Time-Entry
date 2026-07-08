@@ -30,7 +30,9 @@ export function AppShell({ title, subtitle, children, footer }: AppShellProps) {
       <main
         className={[
           'mx-auto w-full max-w-lg flex-1',
-          footer ? '' : 'pb-[max(1rem,env(safe-area-inset-bottom))]',
+          footer
+            ? 'pb-[calc(4.5rem+env(safe-area-inset-bottom))]'
+            : 'pb-[max(1rem,env(safe-area-inset-bottom))]',
         ]
           .filter(Boolean)
           .join(' ')}
@@ -38,7 +40,11 @@ export function AppShell({ title, subtitle, children, footer }: AppShellProps) {
         {children}
       </main>
 
-      {footer}
+      {footer ? (
+        <footer className="pointer-events-none fixed inset-x-0 bottom-0 z-10 px-3 pb-[env(safe-area-inset-bottom)] sm:px-4">
+          <div className="pointer-events-auto mx-auto max-w-lg">{footer}</div>
+        </footer>
+      ) : null}
     </div>
   );
 }
