@@ -100,7 +100,7 @@ export function CalendarContainer({
   }
 
   return (
-    <div className="py-3">
+    <div className="pb-3">
       <CalendarViewSwitcher value={view} onChange={setView} />
 
       {!loading && !error ? (

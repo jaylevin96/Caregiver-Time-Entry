@@ -12,7 +12,15 @@ export function AppShell({ title, subtitle, children, footer }: AppShellProps) {
   const { signOut } = useAuth();
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div
+      className="flex min-h-dvh flex-col"
+      style={
+        {
+          '--app-header-height':
+            'calc(env(safe-area-inset-top) + 4.5rem)',
+        } as React.CSSProperties
+      }
+    >
       <header className="border-border bg-surface-raised/95 supports-[backdrop-filter]:bg-surface-raised/80 sticky top-0 z-10 border-b backdrop-blur">
         <div className="mx-auto flex max-w-lg items-center justify-between gap-3 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <div className="min-w-0">
