@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useAuth } from '@/features/auth/useAuth';
 import { Button } from '@/components/ui/Button';
 import { AuthField } from '@/features/auth/AuthField';
 
 export function LoginPage() {
   const { signIn } = useAuth();
+  const formRef = useRef<HTMLFormElement>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -13,6 +14,8 @@ export function LoginPage() {
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+    if (submitting) return;
+
     setSubmitting(true);
     setError(null);
 
@@ -22,6 +25,24 @@ export function LoginPage() {
     }
 
     setSubmitting(false);
+  }
+
+  function handleFormKeyDown(event: React.KeyboardEvent<HTMLFormElement>) {
+    if (event.key !== 'Enter' || submitting) return;
+
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement)) return;
+
+    event.preventDefault();
+
+    if (target.type === 'email' && !password.trim()) {
+      formRef.current
+        ?.querySelector<HTMLInputElement>('input[type="password"]')
+        ?.focus();
+      return;
+    }
+
+    formRef.current?.requestSubmit();
   }
 
   return (
@@ -34,12 +55,18 @@ export function LoginPage() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form
+          ref={formRef}
+          onSubmit={handleSubmit}
+          onKeyDown={handleFormKeyDown}
+          className="space-y-4"
+        >
           <AuthField
             label="Email"
             type="email"
             autoComplete="email"
             inputMode="email"
+            enterKeyHint="next"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -49,6 +76,7 @@ export function LoginPage() {
             label="Password"
             type="password"
             autoComplete="current-password"
+            enterKeyHint="go"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
