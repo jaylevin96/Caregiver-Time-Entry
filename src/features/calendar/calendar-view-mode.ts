@@ -1,6 +1,6 @@
 export type CalendarViewMode = 'month' | 'week' | 'days';
 
-const STORAGE_KEY = 'care-hours-calendar-view';
+const STORAGE_KEY = 'time-tracker-calendar-view';
 
 export function getStoredCalendarView(): CalendarViewMode {
   try {

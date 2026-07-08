@@ -1,5 +1,5 @@
 -- =============================================================================
--- Care Hours — Block time entry beyond the current payroll week
+-- Time Tracker — Block time entry beyond the current payroll week
 -- =============================================================================
 -- Caregivers may not create or edit entries with work_date after the Sunday
 -- of the current week (Mon–Sun, America/Chicago).

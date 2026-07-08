@@ -46,7 +46,7 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     return (
       <AccessMessage
         title="Setting up your account"
-        description="We couldn't load your Care Hours profile. Try signing out and back in."
+        description="We couldn't load your Time Tracker profile. Try signing out and back in."
       />
     );
   }

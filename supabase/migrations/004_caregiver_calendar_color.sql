@@ -1,5 +1,5 @@
 -- =============================================================================
--- Care Hours — Caregiver calendar colors
+-- Time Tracker — Caregiver calendar colors
 -- =============================================================================
 -- Run in Supabase Dashboard → SQL Editor (after 001–003).
 -- =============================================================================
@@ -133,7 +133,7 @@ DECLARE
   v_profile care_hours.profiles;
 BEGIN
   IF NOT care_hours.is_admin() THEN
-    RAISE EXCEPTION 'Only admins can create care hours profiles';
+    RAISE EXCEPTION 'Only admins can create Time Tracker profiles';
   END IF;
 
   IF p_role NOT IN ('caregiver', 'admin') THEN

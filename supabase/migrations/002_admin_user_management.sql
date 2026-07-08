@@ -1,5 +1,5 @@
 -- =============================================================================
--- Care Hours — Admin user & role management
+-- Time Tracker — Admin user & role management
 -- =============================================================================
 -- Run in Supabase Dashboard → SQL Editor (after 001_care_hours_schema.sql).
 --
@@ -8,7 +8,7 @@
 --   • Promote/demote users between caregiver and admin
 -- =============================================================================
 
--- Link an auth user to the care hours app (admin only).
+-- Link an auth user to the Time Tracker app (admin only).
 -- The auth user must already exist (Authentication → Users).
 CREATE OR REPLACE FUNCTION care_hours.create_care_hours_profile(
   p_user_id uuid,
@@ -25,7 +25,7 @@ DECLARE
   v_profile care_hours.profiles;
 BEGIN
   IF NOT care_hours.is_admin() THEN
-    RAISE EXCEPTION 'Only admins can create care hours profiles';
+    RAISE EXCEPTION 'Only admins can create Time Tracker profiles';
   END IF;
 
   IF p_role NOT IN ('caregiver', 'admin') THEN
@@ -89,7 +89,7 @@ BEGIN
   RETURNING * INTO v_profile;
 
   IF v_profile IS NULL THEN
-    RAISE EXCEPTION 'care hours profile not found for this user';
+    RAISE EXCEPTION 'Time Tracker profile not found for this user';
   END IF;
 
   RETURN v_profile;

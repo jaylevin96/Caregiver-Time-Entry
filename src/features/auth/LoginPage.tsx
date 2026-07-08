@@ -28,7 +28,7 @@ export function LoginPage() {
     <div className="flex min-h-dvh flex-col justify-center px-6 py-12">
       <div className="mx-auto w-full max-w-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">Care Hours</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Time Tracker</h1>
           <p className="text-text-muted mt-2 text-sm">
             Sign in to log or review caregiver hours
           </p>

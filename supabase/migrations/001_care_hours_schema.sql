@@ -1,5 +1,5 @@
 -- =============================================================================
--- Care Hours App — Schema, Functions, and RLS
+-- Time Tracker — Schema, Functions, and RLS
 -- =============================================================================
 -- Run this in Supabase Dashboard → SQL Editor.
 -- Safe to combine with other apps: everything lives in the `care_hours` schema

@@ -1,5 +1,5 @@
 -- =============================================================================
--- Care Hours — Caregiver self-registration
+-- Time Tracker — Caregiver self-registration
 -- =============================================================================
 -- Run in Supabase Dashboard → SQL Editor (after 001 and 002).
 --

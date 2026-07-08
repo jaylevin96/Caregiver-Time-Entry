@@ -1,4 +1,4 @@
-# Supabase Setup — Care Hours App
+# Supabase Setup — Time Tracker
 
 This app lives in the **`care_hours`** schema inside your existing Supabase project, separate from `public.profiles` and reservations tables.
 
