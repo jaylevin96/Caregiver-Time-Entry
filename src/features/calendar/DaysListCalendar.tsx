@@ -8,14 +8,16 @@ import {
 import {
   addDays,
   endOfPayrollWeek,
+  entryExpenseAmount,
   entryHours,
   formatDayListHeading,
   formatDayListLabel,
-  formatHours,
   formatHoursReadable,
+  formatCompactExpense,
   generateDateRange,
   getChicagoDateString,
 } from '@/lib/utils/dates';
+import { formatCurrency } from '@/lib/utils/payment-format';
 import { textColorForBackground } from '@/lib/utils/calendar-colors';
 import {
   getDayEntryStatus,
@@ -177,6 +179,7 @@ function DayListRow({
       ? null
       : getStatusLabel(status);
   const hours = entry ? entryHours(entry.hours) : 0;
+  const expense = entry ? entryExpenseAmount(entry.expense_amount) : 0;
   const hasPills = dayPills && dayPills.length > 0;
 
   return (
@@ -241,21 +244,25 @@ function DayListRow({
             <span className="flex flex-wrap justify-end gap-1">
               {dayPills.map((pill) => (
                 <span
-                  key={pill.caregiverId}
-                  title={`${pill.displayName}: ${formatHoursReadable(pill.hours)}`}
-                  className="rounded-full px-2 py-0.5 text-xs font-bold tabular-nums"
+                  key={pill.key}
+                  title={pill.title}
+                  className={[
+                    'rounded-full px-2 py-0.5 text-xs font-bold tabular-nums',
+                    pill.isExpense ? 'ring-1 ring-inset ring-black/15' : '',
+                  ].join(' ')}
                   style={{
                     backgroundColor: pill.color,
                     color: textColorForBackground(pill.color),
                   }}
                 >
-                  {formatHours(pill.hours)}
+                  {pill.label}
                 </span>
               ))}
             </span>
-          ) : hours > 0 ? (
+          ) : hours > 0 || expense > 0 ? (
             <span
               className={[
+                'flex flex-col items-end',
                 status === 'locked' || accentColor ? '' : 'text-accent',
                 status === 'locked' ? 'text-text-muted' : '',
                 'text-sm font-bold tabular-nums',
@@ -266,7 +273,16 @@ function DayListRow({
                   : undefined
               }
             >
-              {formatHoursReadable(hours)}
+              {hours > 0 ? (
+                <span>{formatHoursReadable(hours)}</span>
+              ) : null}
+              {expense > 0 ? (
+                <span className="text-xs font-semibold">
+                  {hours > 0
+                    ? formatCompactExpense(expense)
+                    : formatCurrency(expense)}
+                </span>
+              ) : null}
             </span>
           ) : readOnly || status !== 'empty' ? null : (
             <span className="text-text-muted text-sm">Add</span>

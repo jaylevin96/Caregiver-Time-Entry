@@ -197,6 +197,26 @@ export function entryHours(hours: number | null | undefined): number {
   return hours ?? 0;
 }
 
+export function entryExpenseAmount(amount: number | null | undefined): number {
+  if (!amount || amount <= 0) return 0;
+  return amount;
+}
+
+export function entryHasValue(entry: {
+  hours: number | null;
+  expense_amount?: number | null;
+}): boolean {
+  return (
+    entryHours(entry.hours) > 0 || entryExpenseAmount(entry.expense_amount) > 0
+  );
+}
+
+/** Compact expense label for calendar cells, e.g. "$25". */
+export function formatCompactExpense(amount: number): string {
+  if (Number.isInteger(amount)) return `$${amount}`;
+  return `$${amount.toFixed(2)}`;
+}
+
 export function isValidQuarterHours(hours: number): boolean {
   return hours > 0 && hours <= 24 && Math.abs(hours * 4 - Math.round(hours * 4)) < 0.001;
 }

@@ -73,7 +73,8 @@ export function DayEntrySheet({
   const expenseAmount = parseExpenseDraft(expenseDraft);
   const hasHours = hours > 0 && isValidQuarterHours(hours);
   const hasExpense = expenseAmount !== null && expenseAmount > 0;
-  const canSave = hasHours || hasExpense;
+  const hasInvalidHours = hours > 0 && !isValidQuarterHours(hours);
+  const canSave = (hasHours || hasExpense) && !hasInvalidHours;
 
   useEffect(() => {
     if (!open) return;
@@ -92,13 +93,13 @@ export function DayEntrySheet({
   async function handleSave() {
     if (!editable) return;
 
-    if (!canSave) {
-      setError('Enter hours, an expense amount, or both.');
+    if (hasInvalidHours) {
+      setError('Enter hours in 0.25 increments (max 24).');
       return;
     }
 
-    if (hours > 0 && !isValidQuarterHours(hours)) {
-      setError('Enter hours in 0.25 increments (max 24).');
+    if (!canSave) {
+      setError('Enter hours, an expense amount, or both.');
       return;
     }
 
@@ -241,6 +242,12 @@ export function DayEntrySheet({
             </label>
 
             {error ? <ErrorBanner message={error} /> : null}
+
+            {hasInvalidHours ? (
+              <p className="text-danger text-center text-xs" role="alert">
+                Use 0.25-hour steps (e.g. 4, 4.25, 4.5).
+              </p>
+            ) : null}
 
             <div className="space-y-2">
               <Button
