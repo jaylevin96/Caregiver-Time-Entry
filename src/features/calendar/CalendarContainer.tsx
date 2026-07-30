@@ -1,5 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { ALL_CAREGIVERS_ID } from '@/features/admin/CaregiverFilter';
 import { CalendarSummaryBar } from '@/features/calendar/CalendarSummaryBar';
+import {
+  buildDayPills,
+  type CaregiverDayPill,
+} from '@/features/calendar/CalendarDayCell';
 import { CalendarViewSwitcher } from '@/features/calendar/CalendarViewSwitcher';
 import { DaysListCalendar } from '@/features/calendar/DaysListCalendar';
 import { MonthCalendar } from '@/features/calendar/MonthCalendar';
@@ -18,7 +23,7 @@ import {
   getWeekDates,
   startOfCalendarWeek,
 } from '@/lib/utils/dates';
-import type { TimeEntry } from '@/types/database';
+import type { Profile, TimeEntry } from '@/types/database';
 
 interface CalendarContainerProps {
   caregiverId: string | undefined;
@@ -27,6 +32,8 @@ interface CalendarContainerProps {
   readOnly?: boolean;
   accentColor?: string;
   hideStatus?: boolean;
+  stickyHeader?: ReactNode;
+  caregivers?: Profile[];
 }
 
 export function CalendarContainer({
@@ -36,6 +43,8 @@ export function CalendarContainer({
   readOnly = false,
   accentColor,
   hideStatus = false,
+  stickyHeader,
+  caregivers = [],
 }: CalendarContainerProps) {
   const today = getChicagoDateString();
   const [todayY, todayM] = today.split('-').map(Number);
@@ -44,6 +53,23 @@ export function CalendarContainer({
   const [year, setYear] = useState(todayY);
   const [month, setMonth] = useState(todayM - 1);
   const [weekStart, setWeekStart] = useState(() => startOfCalendarWeek(today));
+
+  const showMultiPills =
+    caregiverId === ALL_CAREGIVERS_ID && caregivers.length > 0;
+
+  const caregiversById = useMemo(
+    () =>
+      new Map(
+        caregivers.map((caregiver) => [
+          caregiver.id,
+          {
+            display_name: caregiver.display_name,
+            calendar_color: caregiver.calendar_color,
+          },
+        ]),
+      ),
+    [caregivers],
+  );
 
   const fetchRange = useMemo(() => {
     switch (view) {
@@ -80,15 +106,23 @@ export function CalendarContainer({
         ? 'This week'
         : 'Last 60 days';
 
-  const { entriesByDate, loading, error, refresh } = useDateRangeEntries({
-    caregiverId,
-    start: fetchRange.start,
-    end: fetchRange.end,
-  });
+  const { entriesByDate, multiEntriesByDate, loading, error, refresh } =
+    useDateRangeEntries({
+      caregiverId,
+      start: fetchRange.start,
+      end: fetchRange.end,
+    });
 
   useEffect(() => {
     refresh();
   }, [refreshSignal, refresh]);
+
+  function getDayPills(date: string): CaregiverDayPill[] | undefined {
+    if (!showMultiPills) return undefined;
+    const entries = multiEntriesByDate[date];
+    if (!entries?.length) return undefined;
+    return buildDayPills(entries, caregiversById);
+  }
 
   function handleSelectDate(date: string) {
     onSelectDate(date, entriesByDate[date]);
@@ -101,7 +135,10 @@ export function CalendarContainer({
 
   return (
     <div className="pb-3">
-      <CalendarViewSwitcher value={view} onChange={setView} />
+      <div className="bg-surface/95 supports-[backdrop-filter]:bg-surface/80 sticky top-[var(--app-header-height,calc(env(safe-area-inset-top)+4.5rem))] z-[9] backdrop-blur">
+        {stickyHeader}
+        <CalendarViewSwitcher value={view} onChange={setView} embedded />
+      </div>
 
       {!loading && !error ? (
         <CalendarSummaryBar
@@ -121,6 +158,7 @@ export function CalendarContainer({
           readOnly={readOnly}
           accentColor={accentColor}
           hideStatus={hideStatus}
+          getDayPills={showMultiPills ? getDayPills : undefined}
           onMonthChange={handleMonthChange}
           onSelectDate={handleSelectDate}
         />
@@ -135,6 +173,7 @@ export function CalendarContainer({
           readOnly={readOnly}
           accentColor={accentColor}
           hideStatus={hideStatus}
+          getDayPills={showMultiPills ? getDayPills : undefined}
           onWeekChange={setWeekStart}
           onSelectDate={handleSelectDate}
         />
@@ -143,6 +182,8 @@ export function CalendarContainer({
       {view === 'days' ? (
         <DaysListCalendar
           entriesByDate={entriesByDate}
+          multiEntriesByDate={showMultiPills ? multiEntriesByDate : undefined}
+          caregiversById={showMultiPills ? caregiversById : undefined}
           loading={loading}
           error={error}
           readOnly={readOnly}

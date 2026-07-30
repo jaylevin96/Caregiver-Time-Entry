@@ -1,4 +1,4 @@
-import { CalendarDayCell } from '@/features/calendar/CalendarDayCell';
+import { CalendarDayCell, type CaregiverDayPill } from '@/features/calendar/CalendarDayCell';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { InlineSpinner } from '@/components/ui/InlineSpinner';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
@@ -29,6 +29,7 @@ interface MonthCalendarProps {
   readOnly?: boolean;
   accentColor?: string;
   hideStatus?: boolean;
+  getDayPills?: (date: string) => CaregiverDayPill[] | undefined;
   onMonthChange: (year: number, month: number) => void;
   onSelectDate: (date: string) => void;
 }
@@ -42,6 +43,7 @@ export function MonthCalendar({
   readOnly = false,
   accentColor,
   hideStatus = false,
+  getDayPills,
   onMonthChange,
   onSelectDate,
 }: MonthCalendarProps) {
@@ -138,6 +140,7 @@ export function MonthCalendar({
                     inMonth={date.startsWith(monthPrefix)}
                     isToday={date === today}
                     entry={entriesByDate[date]}
+                    dayPills={getDayPills?.(date)}
                     onSelect={onSelectDate}
                     readOnly={readOnly}
                     accentColor={accentColor}

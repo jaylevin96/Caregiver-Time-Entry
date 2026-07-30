@@ -2,7 +2,14 @@ import { useEffect, useState } from 'react';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { InlineSpinner } from '@/components/ui/InlineSpinner';
 import { db } from '@/lib/supabase';
-import { formatDisplayDate, formatHours } from '@/lib/utils/dates';
+import { textColorForBackground } from '@/lib/utils/calendar-colors';
+import {
+  entryHours,
+  formatDisplayDate,
+  formatHours,
+  formatHoursReadable,
+} from '@/lib/utils/dates';
+import { formatCurrency } from '@/lib/utils/payment-format';
 import { getDayEntryStatus, getStatusLabel } from '@/lib/utils/entry-status';
 import type { Profile, TimeEntry } from '@/types/database';
 
@@ -57,11 +64,18 @@ export function AdminAllDaySheet({
     };
   }, [open, workDate]);
 
-  const caregiverNames = new Map(
-    caregivers.map((caregiver) => [caregiver.id, caregiver.display_name]),
+  const caregiverById = new Map(
+    caregivers.map((caregiver) => [caregiver.id, caregiver]),
   );
 
-  const totalHours = entries.reduce((sum, entry) => sum + entry.hours, 0);
+  const totalHours = entries.reduce(
+    (sum, entry) => sum + entryHours(entry.hours),
+    0,
+  );
+  const totalReimbursement = entries.reduce(
+    (sum, entry) => sum + (entry.expense_amount ?? 0),
+    0,
+  );
 
   return (
     <BottomSheet
@@ -75,20 +89,25 @@ export function AdminAllDaySheet({
         </div>
       ) : entries.length === 0 ? (
         <p className="text-text-muted py-4 text-center text-sm">
-          No hours logged for this day.
+          No entries logged for this day.
         </p>
       ) : (
         <div className="space-y-4">
-          <p className="text-accent text-center text-2xl font-bold tabular-nums">
-            {formatHours(totalHours)}h total
-          </p>
+          {totalHours > 0 ? (
+            <p className="text-accent text-center text-xl font-bold">
+              {formatHoursReadable(totalHours)} total
+            </p>
+          ) : null}
 
           <ul className="space-y-2">
             {entries.map((entry) => {
+              const caregiver = caregiverById.get(entry.caregiver_id);
+              const color = caregiver?.calendar_color ?? '#2563eb';
               const status = workDate
                 ? getDayEntryStatus(workDate, entry)
                 : 'editable';
               const badge = getStatusLabel(status);
+              const hours = entryHours(entry.hours);
 
               return (
                 <li
@@ -98,9 +117,23 @@ export function AdminAllDaySheet({
                     status === 'paid' ? 'bg-success/5' : 'bg-surface-raised',
                   ].join(' ')}
                 >
-                  <span className="font-medium">
-                    {caregiverNames.get(entry.caregiver_id) ?? 'Unknown'}
-                  </span>
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span
+                      className="h-3 w-3 shrink-0 rounded-full"
+                      style={{ backgroundColor: color }}
+                      aria-hidden="true"
+                    />
+                    <div className="min-w-0">
+                      <span className="font-medium">
+                        {caregiver?.display_name ?? 'Unknown'}
+                      </span>
+                      {entry.expense_amount && entry.expense_amount > 0 ? (
+                        <p className="text-text-muted text-sm">
+                          Reimbursement {formatCurrency(entry.expense_amount)}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
                   <div className="flex shrink-0 items-center gap-2">
                     {badge ? (
                       <span
@@ -114,14 +147,28 @@ export function AdminAllDaySheet({
                         {badge}
                       </span>
                     ) : null}
-                    <span className="text-accent font-bold tabular-nums">
-                      {formatHours(entry.hours)}h
-                    </span>
+                    {hours > 0 ? (
+                      <span
+                        className="rounded-full px-2.5 py-1 text-sm font-bold tabular-nums"
+                        style={{
+                          backgroundColor: color,
+                          color: textColorForBackground(color),
+                        }}
+                      >
+                        {formatHours(hours)}
+                      </span>
+                    ) : null}
                   </div>
                 </li>
               );
             })}
           </ul>
+
+          {totalReimbursement > 0 ? (
+            <p className="text-text-muted text-center text-sm">
+              Reimbursements: {formatCurrency(totalReimbursement)}
+            </p>
+          ) : null}
         </div>
       )}
     </BottomSheet>

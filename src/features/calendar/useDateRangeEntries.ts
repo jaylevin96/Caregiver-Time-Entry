@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ALL_CAREGIVERS_ID } from '@/features/admin/CaregiverFilter';
 import { db } from '@/lib/supabase';
+import { entryHours } from '@/lib/utils/dates';
 import type { CalendarEntry } from '@/lib/utils/entry-status';
 import type { TimeEntry } from '@/types/database';
 
@@ -10,32 +11,44 @@ interface UseDateRangeEntriesOptions {
   end: string | undefined;
 }
 
+function groupEntriesByDate(
+  entries: TimeEntry[],
+): Record<string, TimeEntry[]> {
+  const byDate: Record<string, TimeEntry[]> = {};
+
+  for (const entry of entries) {
+    const dayEntries = byDate[entry.work_date] ?? [];
+    dayEntries.push(entry);
+    byDate[entry.work_date] = dayEntries;
+  }
+
+  return byDate;
+}
+
 function aggregateEntriesByDate(
   entries: TimeEntry[],
 ): Record<string, CalendarEntry> {
-  const byDate = new Map<string, TimeEntry[]>();
-
-  for (const entry of entries) {
-    const dayEntries = byDate.get(entry.work_date) ?? [];
-    dayEntries.push(entry);
-    byDate.set(entry.work_date, dayEntries);
-  }
-
+  const byDate = groupEntriesByDate(entries);
   const map: Record<string, CalendarEntry> = {};
 
-  for (const [workDate, dayEntries] of byDate) {
+  for (const [workDate, dayEntries] of Object.entries(byDate)) {
     const paidCount = dayEntries.filter((entry) => entry.payment_id).length;
     const allPaid = paidCount === dayEntries.length && paidCount > 0;
     const first = dayEntries[0];
 
     map[workDate] = {
       ...first,
-      hours: dayEntries.reduce((sum, entry) => sum + entry.hours, 0),
+      hours: dayEntries.reduce((sum, entry) => sum + entryHours(entry.hours), 0),
+      expense_amount: dayEntries.reduce(
+        (sum, entry) => sum + (entry.expense_amount ?? 0),
+        0,
+      ),
       payment_id: allPaid ? first.payment_id : null,
       notes: null,
       _aggregate: {
         entryCount: dayEntries.length,
         paidCount,
+        entries: dayEntries,
       },
     };
   }
@@ -51,12 +64,16 @@ export function useDateRangeEntries({
   const [entriesByDate, setEntriesByDate] = useState<
     Record<string, CalendarEntry>
   >({});
+  const [multiEntriesByDate, setMultiEntriesByDate] = useState<
+    Record<string, TimeEntry[]>
+  >({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!caregiverId || !start || !end) {
       setEntriesByDate({});
+      setMultiEntriesByDate({});
       setLoading(false);
       return;
     }
@@ -78,16 +95,20 @@ export function useDateRangeEntries({
     if (fetchError) {
       setError(fetchError.message);
       setEntriesByDate({});
+      setMultiEntriesByDate({});
     } else {
-      const map: Record<string, CalendarEntry> = {};
+      const rows = data ?? [];
       if (caregiverId === ALL_CAREGIVERS_ID) {
-        Object.assign(map, aggregateEntriesByDate(data ?? []));
+        setEntriesByDate(aggregateEntriesByDate(rows));
+        setMultiEntriesByDate(groupEntriesByDate(rows));
       } else {
-        for (const entry of data ?? []) {
+        const map: Record<string, CalendarEntry> = {};
+        for (const entry of rows) {
           map[entry.work_date] = entry;
         }
+        setEntriesByDate(map);
+        setMultiEntriesByDate({});
       }
-      setEntriesByDate(map);
     }
 
     setLoading(false);
@@ -97,5 +118,11 @@ export function useDateRangeEntries({
     load();
   }, [load]);
 
-  return { entriesByDate, loading, error, refresh: load };
+  return {
+    entriesByDate,
+    multiEntriesByDate,
+    loading,
+    error,
+    refresh: load,
+  };
 }

@@ -7,13 +7,15 @@ import { HoursInput } from '@/features/time-entry/HoursInput';
 import { getLastHours, saveLastHours } from '@/features/time-entry/last-hours';
 import { db } from '@/lib/supabase';
 import {
+  entryHours,
   formatDisplayDate,
-  formatHours,
+  formatHoursReadable,
   formatWeekEndLabel,
   getChicagoDateString,
   endOfPayrollWeek,
   isValidQuarterHours,
 } from '@/lib/utils/dates';
+import { formatCurrency } from '@/lib/utils/payment-format';
 import {
   canEditEntry,
   getDayEntryStatus,
@@ -32,6 +34,19 @@ interface DayEntrySheetProps {
   onSaved: () => void;
 }
 
+function parseExpenseDraft(value: string): number | null {
+  const trimmed = value.trim().replace(/[$,]/g, '');
+  if (!trimmed) return null;
+  const parsed = Number(trimmed);
+  if (!Number.isFinite(parsed) || parsed <= 0) return null;
+  return Math.round(parsed * 100) / 100;
+}
+
+function formatExpenseDraft(amount: number | null | undefined): string {
+  if (!amount || amount <= 0) return '';
+  return String(amount);
+}
+
 export function DayEntrySheet({
   open,
   workDate,
@@ -44,6 +59,7 @@ export function DayEntrySheet({
 }: DayEntrySheetProps) {
   const userId = actorId ?? caregiverId;
   const [hours, setHours] = useState(0);
+  const [expenseDraft, setExpenseDraft] = useState('');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -54,12 +70,17 @@ export function DayEntrySheet({
   const editable =
     !readOnly && (workDate ? canEditEntry(workDate, entry) : false);
   const badge = getStatusLabel(status);
+  const expenseAmount = parseExpenseDraft(expenseDraft);
+  const hasHours = hours > 0 && isValidQuarterHours(hours);
+  const hasExpense = expenseAmount !== null && expenseAmount > 0;
+  const canSave = hasHours || hasExpense;
 
   useEffect(() => {
     if (!open) return;
     const canEdit =
       !readOnly && (workDate ? canEditEntry(workDate, entry) : false);
-    setHours(entry?.hours ?? (canEdit ? getLastHours() : 0));
+    setHours(entry ? entryHours(entry.hours) : canEdit ? getLastHours() : 0);
+    setExpenseDraft(formatExpenseDraft(entry?.expense_amount));
     setNotes(entry?.notes ?? '');
     setError(null);
     setSaved(false);
@@ -71,10 +92,22 @@ export function DayEntrySheet({
   async function handleSave() {
     if (!editable) return;
 
-    if (!isValidQuarterHours(hours)) {
+    if (!canSave) {
+      setError('Enter hours, an expense amount, or both.');
+      return;
+    }
+
+    if (hours > 0 && !isValidQuarterHours(hours)) {
       setError('Enter hours in 0.25 increments (max 24).');
       return;
     }
+
+    const payload = {
+      hours: hasHours ? hours : null,
+      expense_amount: hasExpense ? expenseAmount : null,
+      notes: notes.trim() || null,
+      updated_by: userId,
+    };
 
     setSubmitting(true);
     setError(null);
@@ -82,11 +115,7 @@ export function DayEntrySheet({
     if (entry) {
       const { error: updateError } = await db
         .from('time_entries')
-        .update({
-          hours,
-          notes: notes.trim() || null,
-          updated_by: userId,
-        })
+        .update(payload)
         .eq('id', entry.id);
 
       if (updateError) {
@@ -98,10 +127,8 @@ export function DayEntrySheet({
       const { error: insertError } = await db.from('time_entries').insert({
         caregiver_id: caregiverId,
         work_date: workDate,
-        hours,
-        notes: notes.trim() || null,
         created_by: userId,
-        updated_by: userId,
+        ...payload,
       });
 
       if (insertError) {
@@ -111,7 +138,9 @@ export function DayEntrySheet({
       }
     }
 
-    saveLastHours(hours);
+    if (hasHours) {
+      saveLastHours(hours);
+    }
     setSubmitting(false);
     setSaved(true);
     onSaved();
@@ -162,9 +191,40 @@ export function DayEntrySheet({
         {editable ? (
           <>
             <div>
-              <p className="text-text-muted mb-2 text-sm font-medium">Hours worked</p>
-              <HoursInput value={hours} onChange={setHours} disabled={submitting} />
+              <p className="text-text-muted mb-2 text-sm font-medium">
+                Hours worked <span className="font-normal">(optional)</span>
+              </p>
+              <HoursInput
+                value={hours}
+                onChange={setHours}
+                disabled={submitting}
+                optional
+              />
             </div>
+
+            <label className="block">
+              <span className="text-text-muted mb-1.5 block text-sm font-medium">
+                Expense reimbursement <span className="font-normal">(optional)</span>
+              </span>
+              <div className="relative">
+                <span className="text-text-muted pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-lg">
+                  $
+                </span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  enterKeyHint="done"
+                  value={expenseDraft}
+                  onChange={(event) => setExpenseDraft(event.target.value)}
+                  placeholder="0.00"
+                  disabled={submitting}
+                  className="border-border bg-surface-raised focus:border-accent focus:ring-accent/20 w-full rounded-xl border py-3 pr-4 pl-8 text-base outline-none focus:ring-2 disabled:opacity-50"
+                />
+              </div>
+              <p className="text-text-muted mt-1.5 text-xs">
+                Enter hours, an expense amount, or both.
+              </p>
+            </label>
 
             <label className="block">
               <span className="text-text-muted mb-1.5 block text-sm font-medium">
@@ -174,7 +234,7 @@ export function DayEntrySheet({
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={3}
-                placeholder="e.g. Morning shift"
+                placeholder="e.g. Morning shift, gas receipt"
                 disabled={submitting}
                 className="border-border bg-surface-raised focus:border-accent focus:ring-accent/20 w-full resize-none rounded-xl border px-4 py-3 text-base outline-none focus:ring-2 disabled:opacity-50"
               />
@@ -185,7 +245,7 @@ export function DayEntrySheet({
             <div className="space-y-2">
               <Button
                 fullWidth
-                disabled={submitting || saved || hours <= 0 || !isValidQuarterHours(hours)}
+                disabled={submitting || saved || !canSave}
                 onClick={handleSave}
               >
                 {submitting ? (
@@ -198,16 +258,14 @@ export function DayEntrySheet({
                 ) : entry ? (
                   'Save changes'
                 ) : (
-                  'Add hours'
+                  'Save entry'
                 )}
               </Button>
 
               {entry ? (
                 confirmDelete ? (
                   <div className="border-danger/20 bg-danger/5 space-y-2 rounded-xl border p-3">
-                    <p className="text-sm font-medium">
-                      Delete {formatHours(entry.hours)} hours for this day?
-                    </p>
+                    <p className="text-sm font-medium">Delete this day&apos;s entry?</p>
                     <p className="text-text-muted text-sm">This cannot be undone.</p>
                     <div className="flex gap-2">
                       <Button
@@ -246,13 +304,22 @@ export function DayEntrySheet({
           <div className="space-y-3">
             {entry ? (
               <>
-                <div className="border-border bg-surface rounded-2xl border p-4">
-                  <p className="text-text-muted text-sm">Hours</p>
-                  <p className="text-3xl font-semibold tabular-nums">
-                    {formatHours(entry.hours)}
-                    <span className="text-text-muted ml-1 text-xl font-normal">h</span>
-                  </p>
-                </div>
+                {entryHours(entry.hours) > 0 ? (
+                  <div className="border-border bg-surface rounded-2xl border p-4">
+                    <p className="text-text-muted text-sm">Hours</p>
+                    <p className="text-2xl font-semibold">
+                      {formatHoursReadable(entryHours(entry.hours))}
+                    </p>
+                  </div>
+                ) : null}
+                {entry.expense_amount && entry.expense_amount > 0 ? (
+                  <div className="border-border bg-surface rounded-2xl border p-4">
+                    <p className="text-text-muted text-sm">Expense reimbursement</p>
+                    <p className="text-2xl font-semibold">
+                      {formatCurrency(entry.expense_amount)}
+                    </p>
+                  </div>
+                ) : null}
                 {entry.notes ? (
                   <div>
                     <p className="text-text-muted text-sm">Notes</p>
@@ -266,7 +333,7 @@ export function DayEntrySheet({
                   ? 'This day is locked — no entry was recorded before the payroll deadline.'
                   : status === 'future'
                     ? `You can only log hours through ${formatWeekEndLabel(endOfPayrollWeek(getChicagoDateString()))}.`
-                    : 'No hours recorded for this day.'}
+                    : 'No entry recorded for this day.'}
               </p>
             )}
             <Button fullWidth variant="secondary" onClick={onClose}>

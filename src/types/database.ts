@@ -15,7 +15,8 @@ export interface TimeEntry {
   id: string;
   caregiver_id: string;
   work_date: string;
-  hours: number;
+  hours: number | null;
+  expense_amount: number | null;
   notes: string | null;
   payment_id: string | null;
   created_at: string;
@@ -32,6 +33,7 @@ export interface Payment {
   total_hours: number;
   hourly_rate: number;
   total_amount: number;
+  total_reimbursement: number;
   paid_at: string;
   paid_by: string;
   notes: string | null;

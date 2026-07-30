@@ -13,6 +13,7 @@ export type DayEntryStatus =
 export interface AggregateEntryMeta {
   entryCount: number;
   paidCount: number;
+  entries: TimeEntry[];
 }
 
 export type CalendarEntry = TimeEntry & {

@@ -1,4 +1,4 @@
-import { formatHours } from '@/lib/utils/dates';
+import { formatHours, entryHours } from '@/lib/utils/dates';
 import {
   getDayEntryStatus,
   getStatusLabel,
@@ -6,6 +6,15 @@ import {
   type CalendarEntry,
   type DayEntryStatus,
 } from '@/lib/utils/entry-status';
+import { textColorForBackground } from '@/lib/utils/calendar-colors';
+import type { TimeEntry } from '@/types/database';
+
+export interface CaregiverDayPill {
+  caregiverId: string;
+  hours: number;
+  color: string;
+  displayName: string;
+}
 
 interface CalendarDayCellProps {
   date: string;
@@ -17,6 +26,7 @@ interface CalendarDayCellProps {
   readOnly?: boolean;
   accentColor?: string;
   hideStatus?: boolean;
+  dayPills?: CaregiverDayPill[];
 }
 
 function statusAriaLabel(
@@ -24,7 +34,7 @@ function statusAriaLabel(
   entry?: CalendarEntry,
   readOnly = false,
 ): string {
-  const hours = entry ? `${formatHours(entry.hours)} hours` : 'no hours';
+  const hours = entry ? `${formatHours(entryHours(entry.hours))} hours` : 'no hours';
   switch (status) {
     case 'paid':
       return `${hours}, paid`;
@@ -51,6 +61,7 @@ export function CalendarDayCell({
   readOnly = false,
   accentColor,
   hideStatus = false,
+  dayPills,
 }: CalendarDayCellProps) {
   const dayNum = Number(date.slice(-2));
   const status = getDayEntryStatus(date, entry);
@@ -62,6 +73,8 @@ export function CalendarDayCell({
   const todayRingStyle = accentColor
     ? ({ '--tw-ring-color': accentColor } as React.CSSProperties)
     : undefined;
+  const hasPills = dayPills && dayPills.length > 0;
+  const hasHours = entry && entryHours(entry.hours) > 0;
 
   return (
     <button
@@ -72,6 +85,7 @@ export function CalendarDayCell({
       className={[
         'relative flex touch-manipulation flex-col rounded-lg p-1 transition-transform active:scale-95',
         size === 'large' ? 'min-h-[5.5rem] aspect-auto' : 'aspect-square',
+        hasPills && size === 'default' ? 'min-h-[4.5rem]' : '',
         inMonth ? '' : 'opacity-35',
         status === 'paid'
           ? 'bg-success/10'
@@ -94,7 +108,7 @@ export function CalendarDayCell({
         inMonth &&
         status === 'empty'
           ? 'border-border/70 border border-dashed'
-          : inMonth && entry
+          : inMonth && (entry || hasPills)
             ? 'border-border/50 border'
             : '',
       ]
@@ -115,8 +129,24 @@ export function CalendarDayCell({
         {dayNum}
       </span>
 
-      <span className="flex flex-1 items-center justify-center">
-        {entry ? (
+      <span className="flex flex-1 items-center justify-center overflow-hidden">
+        {hasPills ? (
+          <span className="flex w-full flex-col items-stretch gap-0.5 px-0.5">
+            {dayPills.map((pill) => (
+              <span
+                key={pill.caregiverId}
+                title={`${pill.displayName}: ${formatHours(pill.hours)}h`}
+                className="truncate rounded-full px-1 py-px text-center text-[10px] font-bold leading-tight tabular-nums"
+                style={{
+                  backgroundColor: pill.color,
+                  color: textColorForBackground(pill.color),
+                }}
+              >
+                {formatHours(pill.hours)}
+              </span>
+            ))}
+          </span>
+        ) : hasHours ? (
           <span
             className={[
               accentColor ? '' : 'text-accent',
@@ -125,7 +155,7 @@ export function CalendarDayCell({
             ].join(' ')}
             style={accentStyle}
           >
-            {formatHours(entry.hours)}
+            {formatHours(entryHours(entry.hours))}
           </span>
         ) : !readOnly && inMonth && status === 'empty' ? (
           <span className="text-border text-lg leading-none" aria-hidden="true">
@@ -145,4 +175,22 @@ export function CalendarDayCell({
       ) : null}
     </button>
   );
+}
+
+export function buildDayPills(
+  entries: TimeEntry[],
+  caregiversById: Map<string, { display_name: string; calendar_color: string }>,
+): CaregiverDayPill[] {
+  return entries
+    .filter((entry) => entryHours(entry.hours) > 0)
+    .map((entry) => {
+      const caregiver = caregiversById.get(entry.caregiver_id);
+      return {
+        caregiverId: entry.caregiver_id,
+        hours: entryHours(entry.hours),
+        color: caregiver?.calendar_color ?? '#2563eb',
+        displayName: caregiver?.display_name ?? 'Unknown',
+      };
+    })
+    .sort((a, b) => a.displayName.localeCompare(b.displayName));
 }
