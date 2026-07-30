@@ -157,6 +157,23 @@ export function AdminPayPage() {
     : hoursAmount;
   const paidTotalAmount = lastPayment ? lastPayment.total_amount : totalAmount;
 
+  const paidSuccessMessage = useMemo(() => {
+    if (!lastPayment) return null;
+
+    const hasPaidHours = paidHours > 0;
+    const hasPaidReimbursement = paidReimbursement > 0;
+
+    if (hasPaidHours && hasPaidReimbursement) {
+      return 'Marked paid. Copy the hours summary below for Zelle.';
+    }
+
+    if (hasPaidHours) {
+      return 'Marked paid. Copy the hours summary below for Zelle.';
+    }
+
+    return `Marked paid. Reimbursement total: ${formatCurrency(paidReimbursement)}.`;
+  }, [lastPayment, paidHours, paidReimbursement]);
+
   async function handleMarkPaid() {
     if (!activeCaregiverId || !periodStart || !periodEnd || entries.length === 0) {
       return;
@@ -271,7 +288,7 @@ export function AdminPayPage() {
                               </p>
                             </div>
                           </div>
-                          {!lastPayment ? (
+                          {!lastPayment || displayHourEntries.length > 0 ? (
                             <ul className="text-text-muted max-h-32 space-y-1 overflow-y-auto text-sm">
                               {displayHourEntries.map((entry) => (
                                 <li key={entry.id}>
@@ -299,7 +316,7 @@ export function AdminPayPage() {
                               {formatCurrency(paidReimbursement)}
                             </p>
                           </div>
-                          {!lastPayment ? (
+                          {!lastPayment || displayReimbursementEntries.length > 0 ? (
                             <ul className="text-text-muted max-h-32 space-y-1 overflow-y-auto text-sm">
                               {displayReimbursementEntries.map((entry) => (
                                 <li key={entry.id}>
@@ -320,9 +337,9 @@ export function AdminPayPage() {
                       </p>
                     </div>
 
-                    {lastPayment ? (
+                    {paidSuccessMessage ? (
                       <p className="text-success text-sm font-medium">
-                        Marked paid. Copy the hours summary below for Zelle.
+                        {paidSuccessMessage}
                       </p>
                     ) : null}
 
@@ -352,7 +369,7 @@ export function AdminPayPage() {
                           variant="secondary"
                           onClick={handleCopy}
                         >
-                          Copy Payment Info
+                          Copy hours summary
                         </Button>
                       ) : null}
 

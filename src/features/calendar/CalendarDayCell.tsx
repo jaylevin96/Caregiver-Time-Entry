@@ -1,4 +1,10 @@
-import { formatHours, entryHours } from '@/lib/utils/dates';
+import {
+  entryExpenseAmount,
+  entryHours,
+  formatCompactExpense,
+  formatHours,
+  formatHoursReadable,
+} from '@/lib/utils/dates';
 import {
   getDayEntryStatus,
   getStatusLabel,
@@ -10,10 +16,13 @@ import { textColorForBackground } from '@/lib/utils/calendar-colors';
 import type { TimeEntry } from '@/types/database';
 
 export interface CaregiverDayPill {
+  key: string;
   caregiverId: string;
-  hours: number;
+  label: string;
   color: string;
   displayName: string;
+  title: string;
+  isExpense?: boolean;
 }
 
 interface CalendarDayCellProps {
@@ -34,20 +43,32 @@ function statusAriaLabel(
   entry?: CalendarEntry,
   readOnly = false,
 ): string {
-  const hours = entry ? `${formatHours(entryHours(entry.hours))} hours` : 'no hours';
+  if (!entry) {
+    return readOnly ? 'no entry' : 'no entry, tap to add';
+  }
+
+  const parts: string[] = [];
+  const hours = entryHours(entry.hours);
+  const expense = entryExpenseAmount(entry.expense_amount);
+
+  if (hours > 0) parts.push(`${formatHoursReadable(hours)}`);
+  if (expense > 0) parts.push(`${formatCompactExpense(expense)} reimbursement`);
+
+  const summary = parts.length > 0 ? parts.join(', ') : 'entry';
+
   switch (status) {
     case 'paid':
-      return `${hours}, paid`;
+      return `${summary}, paid`;
     case 'partial':
-      return `${hours}, partially paid`;
+      return `${summary}, partially paid`;
     case 'locked':
-      return entry ? `${hours}, locked` : 'locked, no entry';
+      return `${summary}, locked`;
     case 'editable':
-      return `${hours}, editable`;
+      return `${summary}, editable`;
     case 'future':
       return 'future week, not yet available';
     default:
-      return readOnly ? 'no entry' : 'no entry, tap to add hours';
+      return readOnly ? summary : `${summary}, tap to view`;
   }
 }
 
@@ -74,7 +95,11 @@ export function CalendarDayCell({
     ? ({ '--tw-ring-color': accentColor } as React.CSSProperties)
     : undefined;
   const hasPills = dayPills && dayPills.length > 0;
-  const hasHours = entry && entryHours(entry.hours) > 0;
+  const hours = entry ? entryHours(entry.hours) : 0;
+  const expense = entry ? entryExpenseAmount(entry.expense_amount) : 0;
+  const hasHours = hours > 0;
+  const hasExpense = expense > 0;
+  const hasEntry = hasPills || hasHours || hasExpense;
 
   return (
     <button
@@ -104,11 +129,11 @@ export function CalendarDayCell({
             : 'ring-accent shadow-sm ring-2 ring-inset'
           : '',
         !readOnly &&
-        !entry &&
+        !hasEntry &&
         inMonth &&
         status === 'empty'
           ? 'border-border/70 border border-dashed'
-          : inMonth && (entry || hasPills)
+          : inMonth && hasEntry
             ? 'border-border/50 border'
             : '',
       ]
@@ -134,28 +159,55 @@ export function CalendarDayCell({
           <span className="flex w-full flex-col items-stretch gap-0.5 px-0.5">
             {dayPills.map((pill) => (
               <span
-                key={pill.caregiverId}
-                title={`${pill.displayName}: ${formatHours(pill.hours)}h`}
-                className="truncate rounded-full px-1 py-px text-center text-[10px] font-bold leading-tight tabular-nums"
+                key={pill.key}
+                title={pill.title}
+                className={[
+                  'truncate rounded-full px-1 py-px text-center text-[10px] font-bold leading-tight tabular-nums',
+                  pill.isExpense ? 'ring-1 ring-inset ring-black/15' : '',
+                ].join(' ')}
                 style={{
                   backgroundColor: pill.color,
                   color: textColorForBackground(pill.color),
                 }}
               >
-                {formatHours(pill.hours)}
+                {pill.label}
               </span>
             ))}
           </span>
         ) : hasHours ? (
+          <span className="flex flex-col items-center leading-none">
+            <span
+              className={[
+                accentColor ? '' : 'text-accent',
+                'font-bold tabular-nums',
+                size === 'large' ? 'text-base' : 'text-sm',
+              ].join(' ')}
+              style={accentStyle}
+            >
+              {formatHours(hours)}
+            </span>
+            {hasExpense ? (
+              <span
+                className={[
+                  'mt-0.5 text-[10px] font-semibold tabular-nums',
+                  accentColor ? '' : 'text-text-muted',
+                ].join(' ')}
+                style={accentStyle}
+              >
+                {formatCompactExpense(expense)}
+              </span>
+            ) : null}
+          </span>
+        ) : hasExpense ? (
           <span
             className={[
               accentColor ? '' : 'text-accent',
               'font-bold tabular-nums leading-none',
-              size === 'large' ? 'text-base' : 'text-sm',
+              size === 'large' ? 'text-sm' : 'text-xs',
             ].join(' ')}
             style={accentStyle}
           >
-            {formatHours(entryHours(entry.hours))}
+            {formatCompactExpense(expense)}
           </span>
         ) : !readOnly && inMonth && status === 'empty' ? (
           <span className="text-border text-lg leading-none" aria-hidden="true">
@@ -181,16 +233,42 @@ export function buildDayPills(
   entries: TimeEntry[],
   caregiversById: Map<string, { display_name: string; calendar_color: string }>,
 ): CaregiverDayPill[] {
-  return entries
-    .filter((entry) => entryHours(entry.hours) > 0)
-    .map((entry) => {
-      const caregiver = caregiversById.get(entry.caregiver_id);
-      return {
+  const pills: CaregiverDayPill[] = [];
+
+  for (const entry of entries) {
+    const caregiver = caregiversById.get(entry.caregiver_id);
+    const color = caregiver?.calendar_color ?? '#2563eb';
+    const displayName = caregiver?.display_name ?? 'Unknown';
+    const hours = entryHours(entry.hours);
+    const expense = entryExpenseAmount(entry.expense_amount);
+
+    if (hours > 0) {
+      pills.push({
+        key: `${entry.id}-hours`,
         caregiverId: entry.caregiver_id,
-        hours: entryHours(entry.hours),
-        color: caregiver?.calendar_color ?? '#2563eb',
-        displayName: caregiver?.display_name ?? 'Unknown',
-      };
-    })
-    .sort((a, b) => a.displayName.localeCompare(b.displayName));
+        label: formatHours(hours),
+        color,
+        displayName,
+        title: `${displayName}: ${formatHoursReadable(hours)}`,
+      });
+    }
+
+    if (expense > 0) {
+      pills.push({
+        key: `${entry.id}-expense`,
+        caregiverId: entry.caregiver_id,
+        label: formatCompactExpense(expense),
+        color,
+        displayName,
+        title: `${displayName}: ${formatCompactExpense(expense)} reimbursement`,
+        isExpense: true,
+      });
+    }
+  }
+
+  return pills.sort((a, b) => {
+    const nameCompare = a.displayName.localeCompare(b.displayName);
+    if (nameCompare !== 0) return nameCompare;
+    return a.isExpense ? 1 : -1;
+  });
 }
