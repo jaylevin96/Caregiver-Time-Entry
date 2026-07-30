@@ -1,6 +1,12 @@
 import type { CaregiverRate } from '@/types/database';
 import { getEffectiveRate } from '@/features/admin/CaregiverFilter';
-import { formatHours, parseDateOnly } from '@/lib/utils/dates';
+import {
+  entryHours,
+  formatHours,
+  formatHoursCopy,
+  formatPayCopyDate,
+  parseDateOnly,
+} from '@/lib/utils/dates';
 
 function formatMonthDay(y: number, m: number, d: number): string {
   return new Intl.DateTimeFormat('en-US', {
@@ -50,31 +56,73 @@ export function formatCurrency(amount: number): string {
   });
 }
 
+export interface PaymentSummaryEntry {
+  work_date: string;
+  hours: number | null;
+  expense_amount: number | null;
+}
+
 export function buildPaymentSummaryText(
-  periodStart: string,
-  periodEnd: string,
-  totalHours: number,
+  entries: PaymentSummaryEntry[],
 ): string {
-  return `${formatPayPeriodRange(periodStart, periodEnd)}\n${formatHours(totalHours)} hours`;
+  const lines: string[] = [];
+
+  for (const entry of entries) {
+    const hours = entryHours(entry.hours);
+    if (hours > 0) {
+      lines.push(
+        `${formatPayCopyDate(entry.work_date)} ${formatHoursCopy(hours)}`,
+      );
+    }
+  }
+
+  const totalHours = entries.reduce(
+    (sum, entry) => sum + entryHours(entry.hours),
+    0,
+  );
+
+  if (totalHours > 0) {
+    lines.push(`Total: ${formatHoursCopy(totalHours)}`);
+  }
+
+  return lines.join('\n');
 }
 
 export function calculatePaymentTotal(
-  entries: { hours: number; work_date: string }[],
+  entries: PaymentSummaryEntry[],
   rates: CaregiverRate[],
   defaultRate: number,
-): { totalHours: number; totalAmount: number } {
+): {
+  totalHours: number;
+  hoursAmount: number;
+  totalReimbursement: number;
+  totalAmount: number;
+} {
   let totalHours = 0;
-  let totalAmount = 0;
+  let hoursAmount = 0;
+  let totalReimbursement = 0;
 
   for (const entry of entries) {
-    totalHours += entry.hours;
-    totalAmount +=
-      entry.hours *
-      getEffectiveRate(rates, defaultRate, entry.work_date);
+    const hours = entryHours(entry.hours);
+    if (hours > 0) {
+      totalHours += hours;
+      hoursAmount +=
+        hours * getEffectiveRate(rates, defaultRate, entry.work_date);
+    }
+
+    if (entry.expense_amount && entry.expense_amount > 0) {
+      totalReimbursement += entry.expense_amount;
+    }
   }
 
   return {
     totalHours: Math.round(totalHours * 100) / 100,
-    totalAmount: Math.round(totalAmount * 100) / 100,
+    hoursAmount: Math.round(hoursAmount * 100) / 100,
+    totalReimbursement: Math.round(totalReimbursement * 100) / 100,
+    totalAmount:
+      Math.round((hoursAmount + totalReimbursement) * 100) / 100,
   };
 }
+
+/** @deprecated Use formatHoursReadable for display; kept for compact numeric labels. */
+export { formatHours };

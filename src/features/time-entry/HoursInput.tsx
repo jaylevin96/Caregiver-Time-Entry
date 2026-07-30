@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import {
   formatHours,
+  formatHoursReadable,
   isValidQuarterHours,
   roundToQuarterHours,
 } from '@/lib/utils/dates';
@@ -15,10 +16,14 @@ interface HoursInputProps {
   value: number;
   onChange: (hours: number) => void;
   disabled?: boolean;
+  /** When true, zero is allowed and shown as "No hours". */
+  optional?: boolean;
 }
 
-function clampHours(hours: number): number {
-  return roundToQuarterHours(Math.min(24, Math.max(0, hours)));
+function clampHours(hours: number, optional: boolean): number {
+  const max = 24;
+  const min = optional ? 0 : STEP;
+  return roundToQuarterHours(Math.min(max, Math.max(min, hours)));
 }
 
 function useRepeatAction(action: () => void, disabled: boolean) {
@@ -59,25 +64,36 @@ function useRepeatAction(action: () => void, disabled: boolean) {
   return { start, stop: clearTimers };
 }
 
-export function HoursInput({ value, onChange, disabled = false }: HoursInputProps) {
+export function HoursInput({
+  value,
+  onChange,
+  disabled = false,
+  optional = false,
+}: HoursInputProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
   const decrease = useCallback(() => {
-    onChange(clampHours(value - STEP));
-  }, [onChange, value]);
+    onChange(clampHours(value - STEP, optional));
+  }, [onChange, optional, value]);
 
   const increase = useCallback(() => {
-    onChange(clampHours(value + STEP));
-  }, [onChange, value]);
+    onChange(clampHours(value + STEP, optional));
+  }, [onChange, optional, value]);
 
-  const decreaseRepeat = useRepeatAction(decrease, disabled || value <= 0);
-  const increaseRepeat = useRepeatAction(increase, disabled || value >= 24);
+  const decreaseRepeat = useRepeatAction(
+    decrease,
+    disabled || (!optional && value <= STEP) || value <= 0,
+  );
+  const increaseRepeat = useRepeatAction(
+    increase,
+    disabled || value >= 24,
+  );
 
   function beginEditing() {
     if (disabled) return;
-    setDraft(formatHours(value || 0));
+    setDraft(value > 0 ? formatHours(value) : '');
     setEditing(true);
   }
 
@@ -89,13 +105,22 @@ export function HoursInput({ value, onChange, disabled = false }: HoursInputProp
   }, [editing]);
 
   function commitDraft() {
-    const parsed = Number(draft.replace(',', '.'));
+    const trimmed = draft.trim();
+    if (!trimmed) {
+      if (optional) {
+        onChange(0);
+      }
+      setEditing(false);
+      return;
+    }
+
+    const parsed = Number(trimmed.replace(',', '.'));
     if (!Number.isFinite(parsed)) {
       setEditing(false);
       return;
     }
 
-    const rounded = clampHours(parsed);
+    const rounded = clampHours(parsed, optional);
     onChange(rounded);
     setEditing(false);
   }
@@ -109,6 +134,11 @@ export function HoursInput({ value, onChange, disabled = false }: HoursInputProp
       setEditing(false);
     }
   }
+
+  const displayValue =
+    value > 0 ? formatHours(value) : optional ? '—' : formatHours(0);
+  const readableValue =
+    value > 0 ? formatHoursReadable(value) : optional ? 'No hours' : '0 hours';
 
   return (
     <div className="border-border bg-surface rounded-2xl border p-4">
@@ -138,6 +168,7 @@ export function HoursInput({ value, onChange, disabled = false }: HoursInputProp
               inputMode="decimal"
               enterKeyHint="done"
               aria-label="Hours worked"
+              placeholder={optional ? 'None' : undefined}
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
               onBlur={commitDraft}
@@ -149,15 +180,27 @@ export function HoursInput({ value, onChange, disabled = false }: HoursInputProp
               type="button"
               onClick={beginEditing}
               disabled={disabled}
-              aria-label={`${formatHours(value || 0)} hours. Tap to type a value.`}
+              aria-label={`${readableValue}. Tap to type a value.`}
               className="hover:bg-surface-raised focus-visible:ring-accent/30 rounded-xl px-3 py-1 transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed"
             >
-              <span className="text-4xl font-semibold tabular-nums">
-                {formatHours(value || 0)}
+              <span
+                className={[
+                  'text-4xl font-semibold tabular-nums',
+                  optional && value <= 0 ? 'text-text-muted' : '',
+                ].join(' ')}
+              >
+                {displayValue}
               </span>
-              <span className="text-text-muted ml-0.5 text-2xl font-normal">h</span>
+              {value > 0 ? (
+                <span className="text-text-muted ml-0.5 text-2xl font-normal">h</span>
+              ) : null}
             </button>
           )}
+          {!editing && value > 0 ? (
+            <span className="text-text-muted mt-1 text-xs">
+              {formatHoursReadable(value)}
+            </span>
+          ) : null}
         </div>
 
         <Button
@@ -202,6 +245,21 @@ export function HoursInput({ value, onChange, disabled = false }: HoursInputProp
               </button>
             );
           })}
+          {optional ? (
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => onChange(0)}
+              className={[
+                'min-h-11 touch-manipulation rounded-full border px-4 text-sm font-semibold transition-colors',
+                value === 0
+                  ? 'border-accent bg-accent text-white'
+                  : 'border-border bg-surface-raised text-text hover:border-accent/40',
+              ].join(' ')}
+            >
+              None
+            </button>
+          ) : null}
         </div>
       </div>
 

@@ -9,13 +9,17 @@ import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { InlineSpinner } from '@/components/ui/InlineSpinner';
 import { db } from '@/lib/supabase';
 import {
+  entryHours,
+  formatHoursReadable,
+  getChicagoDateString,
+} from '@/lib/utils/dates';
+import {
   buildPaymentSummaryText,
   calculatePaymentTotal,
   formatCurrency,
   formatPayPeriodRange,
   formatShortDate,
 } from '@/lib/utils/payment-format';
-import { formatHours, getChicagoDateString } from '@/lib/utils/dates';
 import type { CaregiverRate, Payment, TimeEntry } from '@/types/database';
 
 export function AdminPayPage() {
@@ -32,6 +36,7 @@ export function AdminPayPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [lastPayment, setLastPayment] = useState<Payment | null>(null);
+  const [paidSnapshot, setPaidSnapshot] = useState<TimeEntry[]>([]);
   const [copyMessage, setCopyMessage] = useState<string | null>(null);
 
   const activeCaregiverId =
@@ -100,34 +105,57 @@ export function AdminPayPage() {
 
   useEffect(() => {
     setLastPayment(null);
+    setPaidSnapshot([]);
     setCopyMessage(null);
   }, [activeCaregiverId, periodStart, periodEnd]);
 
-  const { totalHours, totalAmount } = calculatePaymentTotal(
-    entries,
-    rates,
-    defaultRate,
+  const hourEntries = useMemo(
+    () => entries.filter((entry) => entryHours(entry.hours) > 0),
+    [entries],
   );
 
+  const reimbursementEntries = useMemo(
+    () =>
+      entries.filter(
+        (entry) => entry.expense_amount && entry.expense_amount > 0,
+      ),
+    [entries],
+  );
+
+  const { totalHours, hoursAmount, totalReimbursement, totalAmount } =
+    calculatePaymentTotal(entries, rates, defaultRate);
+
+  const displayHourEntries = lastPayment
+    ? paidSnapshot.filter((entry) => entryHours(entry.hours) > 0)
+    : hourEntries;
+
+  const displayReimbursementEntries = lastPayment
+    ? paidSnapshot.filter(
+        (entry) => entry.expense_amount && entry.expense_amount > 0,
+      )
+    : reimbursementEntries;
+
   const summaryText = useMemo(() => {
-    if (lastPayment) {
-      return buildPaymentSummaryText(
-        lastPayment.period_start,
-        lastPayment.period_end,
-        lastPayment.total_hours,
-      );
-    }
+    const source = lastPayment ? displayHourEntries : hourEntries;
+    if (source.length === 0) return '';
 
-    if (periodStart && periodEnd && entries.length > 0) {
-      return buildPaymentSummaryText(
-        periodStart,
-        periodEnd,
-        totalHours,
-      );
-    }
+    return buildPaymentSummaryText(
+      source.map((entry) => ({
+        work_date: entry.work_date,
+        hours: entry.hours,
+        expense_amount: entry.expense_amount,
+      })),
+    );
+  }, [lastPayment, displayHourEntries, hourEntries]);
 
-    return '';
-  }, [lastPayment, periodStart, periodEnd, entries.length, totalHours]);
+  const paidReimbursement = lastPayment
+    ? lastPayment.total_reimbursement
+    : totalReimbursement;
+  const paidHours = lastPayment ? lastPayment.total_hours : totalHours;
+  const paidHoursAmount = lastPayment
+    ? lastPayment.total_amount - lastPayment.total_reimbursement
+    : hoursAmount;
+  const paidTotalAmount = lastPayment ? lastPayment.total_amount : totalAmount;
 
   async function handleMarkPaid() {
     if (!activeCaregiverId || !periodStart || !periodEnd || entries.length === 0) {
@@ -150,6 +178,7 @@ export function AdminPayPage() {
     }
 
     setLastPayment(data);
+    setPaidSnapshot(entries);
     setSubmitting(false);
     await loadSummary();
   }
@@ -178,20 +207,24 @@ export function AdminPayPage() {
         />
       ) : (
         <>
-          <CaregiverFilter
-            caregivers={caregivers}
-            selectedId={activeCaregiverId ?? null}
-            onSelect={setSelectedCaregiverId}
-          />
+          <div className="bg-surface/95 supports-[backdrop-filter]:bg-surface/80 sticky top-[var(--app-header-height,calc(env(safe-area-inset-top)+4.5rem))] z-[9] border-border border-b backdrop-blur">
+            <CaregiverFilter
+              caregivers={caregivers}
+              selectedId={activeCaregiverId ?? null}
+              onSelect={setSelectedCaregiverId}
+              embedded
+            />
+            <div className="px-3 pb-3 sm:px-4">
+              <DateRangeFilter
+                startValue={periodStart}
+                endValue={periodEnd}
+                onStartChange={setPeriodStart}
+                onEndChange={setPeriodEnd}
+              />
+            </div>
+          </div>
 
           <div className="space-y-3 px-3 py-3 sm:px-4 sm:py-4">
-            <DateRangeFilter
-              startValue={periodStart}
-              endValue={periodEnd}
-              onStartChange={setPeriodStart}
-              onEndChange={setPeriodEnd}
-            />
-
             {error ? <ErrorBanner message={error} onRetry={loadSummary} /> : null}
 
             {loading ? (
@@ -199,7 +232,7 @@ export function AdminPayPage() {
                 <InlineSpinner size="sm" />
               </div>
             ) : activeCaregiver && periodStart && periodEnd ? (
-              <div className="border-border bg-surface-raised space-y-3 rounded-xl border p-3 sm:p-4">
+              <div className="border-border bg-surface-raised space-y-4 rounded-xl border p-3 sm:p-4">
                 <div>
                   <p className="text-text-muted text-sm">Caregiver</p>
                   <p className="font-medium">{activeCaregiver.display_name}</p>
@@ -218,44 +251,88 @@ export function AdminPayPage() {
                   </p>
                 ) : (
                   <>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <p className="text-text-muted text-sm">Total hours</p>
-                        <p className="text-xl font-semibold tabular-nums">
-                          {formatHours(lastPayment?.total_hours ?? totalHours)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-text-muted text-sm">Amount owed</p>
-                        <p className="text-xl font-semibold tabular-nums">
-                          {formatCurrency(
-                            lastPayment?.total_amount ?? totalAmount,
-                          )}
-                        </p>
-                      </div>
-                    </div>
+                    <section className="space-y-2">
+                      <h3 className="text-sm font-semibold">Hours</h3>
+                      {displayHourEntries.length === 0 ? (
+                        <p className="text-text-muted text-sm">No unpaid hours.</p>
+                      ) : (
+                        <>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <p className="text-text-muted text-sm">Total hours</p>
+                              <p className="text-xl font-semibold">
+                                {formatHoursReadable(paidHours)}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-text-muted text-sm">Hours pay</p>
+                              <p className="text-xl font-semibold tabular-nums">
+                                {formatCurrency(paidHoursAmount)}
+                              </p>
+                            </div>
+                          </div>
+                          {!lastPayment ? (
+                            <ul className="text-text-muted max-h-32 space-y-1 overflow-y-auto text-sm">
+                              {displayHourEntries.map((entry) => (
+                                <li key={entry.id}>
+                                  {formatShortDate(entry.work_date)} ·{' '}
+                                  {formatHoursReadable(entryHours(entry.hours))}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : null}
+                        </>
+                      )}
+                    </section>
 
-                    {!lastPayment && entries.length > 0 ? (
-                      <ul className="text-text-muted max-h-32 space-y-1 overflow-y-auto text-sm">
-                        {entries.map((entry) => (
-                          <li key={entry.id}>
-                            {formatShortDate(entry.work_date)} ·{' '}
-                            {formatHours(entry.hours)} h
-                          </li>
-                        ))}
-                      </ul>
-                    ) : null}
+                    <section className="space-y-2">
+                      <h3 className="text-sm font-semibold">Reimbursements</h3>
+                      {displayReimbursementEntries.length === 0 && paidReimbursement <= 0 ? (
+                        <p className="text-text-muted text-sm">
+                          No expense reimbursements.
+                        </p>
+                      ) : (
+                        <>
+                          <div>
+                            <p className="text-text-muted text-sm">Total reimbursement</p>
+                            <p className="text-xl font-semibold tabular-nums">
+                              {formatCurrency(paidReimbursement)}
+                            </p>
+                          </div>
+                          {!lastPayment ? (
+                            <ul className="text-text-muted max-h-32 space-y-1 overflow-y-auto text-sm">
+                              {displayReimbursementEntries.map((entry) => (
+                                <li key={entry.id}>
+                                  {formatShortDate(entry.work_date)} ·{' '}
+                                  {formatCurrency(entry.expense_amount ?? 0)}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : null}
+                        </>
+                      )}
+                    </section>
+
+                    <div className="border-border border-t pt-3">
+                      <p className="text-text-muted text-sm">Total owed</p>
+                      <p className="text-2xl font-semibold tabular-nums">
+                        {formatCurrency(paidTotalAmount)}
+                      </p>
+                    </div>
 
                     {lastPayment ? (
                       <p className="text-success text-sm font-medium">
-                        Marked paid. Copy the summary below for Zelle.
+                        Marked paid. Copy the hours summary below for Zelle.
                       </p>
                     ) : null}
 
                     {summaryText ? (
-                      <pre className="border-border bg-surface whitespace-pre-wrap rounded-lg border p-3 text-sm leading-relaxed">
-                        {summaryText}
-                      </pre>
+                      <div>
+                        <p className="text-text-muted mb-1 text-sm">Hours copy text</p>
+                        <pre className="border-border bg-surface whitespace-pre-wrap rounded-lg border p-3 text-sm leading-relaxed">
+                          {summaryText}
+                        </pre>
+                      </div>
                     ) : null}
 
                     <div className="space-y-2">

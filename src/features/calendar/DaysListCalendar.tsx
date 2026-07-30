@@ -2,23 +2,36 @@ import { useEffect, useMemo, useRef } from 'react';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { InlineSpinner } from '@/components/ui/InlineSpinner';
 import {
+  buildDayPills,
+  type CaregiverDayPill,
+} from '@/features/calendar/CalendarDayCell';
+import {
   addDays,
   endOfPayrollWeek,
+  entryHours,
   formatDayListHeading,
   formatDayListLabel,
   formatHours,
+  formatHoursReadable,
   generateDateRange,
   getChicagoDateString,
 } from '@/lib/utils/dates';
+import { textColorForBackground } from '@/lib/utils/calendar-colors';
 import {
   getDayEntryStatus,
   getStatusLabel,
   showsPaymentIndicator,
   type CalendarEntry,
 } from '@/lib/utils/entry-status';
+import type { TimeEntry } from '@/types/database';
 
 interface DaysListCalendarProps {
   entriesByDate: Record<string, CalendarEntry>;
+  multiEntriesByDate?: Record<string, TimeEntry[]>;
+  caregiversById?: Map<
+    string,
+    { display_name: string; calendar_color: string }
+  >;
   loading: boolean;
   error: string | null;
   readOnly?: boolean;
@@ -29,6 +42,8 @@ interface DaysListCalendarProps {
 
 export function DaysListCalendar({
   entriesByDate,
+  multiEntriesByDate,
+  caregiversById,
   loading,
   error,
   readOnly = false,
@@ -104,18 +119,29 @@ export function DaysListCalendar({
               {group.heading}
             </h3>
             <ul className="space-y-2">
-              {group.dates.map((date) => (
-                <DayListRow
-                  key={date}
-                  date={date}
-                  entry={entriesByDate[date]}
-                  isToday={date === today}
-                  readOnly={readOnly}
-                  accentColor={accentColor}
-                  hideStatus={hideStatus}
-                  onSelect={onSelectDate}
-                />
-              ))}
+              {group.dates.map((date) => {
+                const dayPills =
+                  multiEntriesByDate && caregiversById
+                    ? buildDayPills(
+                        multiEntriesByDate[date] ?? [],
+                        caregiversById,
+                      )
+                    : undefined;
+
+                return (
+                  <DayListRow
+                    key={date}
+                    date={date}
+                    entry={entriesByDate[date]}
+                    dayPills={dayPills}
+                    isToday={date === today}
+                    readOnly={readOnly}
+                    accentColor={accentColor}
+                    hideStatus={hideStatus}
+                    onSelect={onSelectDate}
+                  />
+                );
+              })}
             </ul>
           </section>
         ))}
@@ -127,6 +153,7 @@ export function DaysListCalendar({
 interface DayListRowProps {
   date: string;
   entry: CalendarEntry | undefined;
+  dayPills?: CaregiverDayPill[];
   isToday: boolean;
   readOnly?: boolean;
   accentColor?: string;
@@ -137,6 +164,7 @@ interface DayListRowProps {
 function DayListRow({
   date,
   entry,
+  dayPills,
   isToday,
   readOnly = false,
   accentColor,
@@ -148,6 +176,8 @@ function DayListRow({
     hideStatus || !showsPaymentIndicator(status)
       ? null
       : getStatusLabel(status);
+  const hours = entry ? entryHours(entry.hours) : 0;
+  const hasPills = dayPills && dayPills.length > 0;
 
   return (
     <li>
@@ -188,7 +218,11 @@ function DayListRow({
             {formatDayListLabel(date)}
             {isToday ? (
               <span
-                className={accentColor ? 'ml-2 text-xs font-semibold' : 'text-accent ml-2 text-xs font-semibold'}
+                className={
+                  accentColor
+                    ? 'ml-2 text-xs font-semibold'
+                    : 'text-accent ml-2 text-xs font-semibold'
+                }
                 style={accentColor ? { color: accentColor } : undefined}
               >
                 Today
@@ -203,12 +237,28 @@ function DayListRow({
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
-          {entry ? (
+          {hasPills ? (
+            <span className="flex flex-wrap justify-end gap-1">
+              {dayPills.map((pill) => (
+                <span
+                  key={pill.caregiverId}
+                  title={`${pill.displayName}: ${formatHoursReadable(pill.hours)}`}
+                  className="rounded-full px-2 py-0.5 text-xs font-bold tabular-nums"
+                  style={{
+                    backgroundColor: pill.color,
+                    color: textColorForBackground(pill.color),
+                  }}
+                >
+                  {formatHours(pill.hours)}
+                </span>
+              ))}
+            </span>
+          ) : hours > 0 ? (
             <span
               className={[
                 status === 'locked' || accentColor ? '' : 'text-accent',
                 status === 'locked' ? 'text-text-muted' : '',
-                'text-lg font-bold tabular-nums',
+                'text-sm font-bold tabular-nums',
               ].join(' ')}
               style={
                 accentColor && status !== 'locked'
@@ -216,7 +266,7 @@ function DayListRow({
                   : undefined
               }
             >
-              {formatHours(entry.hours)}h
+              {formatHoursReadable(hours)}
             </span>
           ) : readOnly || status !== 'empty' ? null : (
             <span className="text-text-muted text-sm">Add</span>

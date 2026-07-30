@@ -1,4 +1,4 @@
-import { formatHours } from '@/lib/utils/dates';
+import { entryHours, formatHoursReadable } from '@/lib/utils/dates';
 import type { TimeEntry } from '@/types/database';
 
 interface CalendarSummaryBarProps {
@@ -18,7 +18,7 @@ export function CalendarSummaryBar({
   for (const date of dates) {
     const entry = entriesByDate[date];
     if (entry) {
-      totalHours += entry.hours;
+      totalHours += entryHours(entry.hours);
       daysWithEntries += 1;
     }
   }
@@ -29,7 +29,7 @@ export function CalendarSummaryBar({
     <div className="bg-surface-raised border-border mx-3 mb-3 flex items-center justify-between rounded-xl border px-3 py-2 text-sm sm:mx-4">
       <span className="text-text-muted">{label}</span>
       <span className="font-semibold tabular-nums">
-        {formatHours(totalHours)}h
+        {formatHoursReadable(totalHours)}
         <span className="text-text-muted font-normal">
           {' '}
           · {daysWithEntries} {daysWithEntries === 1 ? 'day' : 'days'}

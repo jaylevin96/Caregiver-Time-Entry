@@ -42,22 +42,23 @@ export function AdminCalendarPage() {
           description="Share the app link so caregivers can sign up from the login page."
         />
       ) : (
-        <CaregiverFilter
-          caregivers={caregivers}
-          selectedId={activeFilterId}
-          onSelect={setSelectedCaregiverId}
-          showAllOption
-        />
-      )}
-
-      {caregivers.length > 0 && !caregiversLoading ? (
         <CalendarContainer
           caregiverId={activeFilterId}
+          caregivers={caregivers}
           onSelectDate={handleSelectDate}
           readOnly
           accentColor={showAllCaregivers ? undefined : activeCaregiver?.calendar_color}
+          stickyHeader={
+            <CaregiverFilter
+              caregivers={caregivers}
+              selectedId={activeFilterId}
+              onSelect={setSelectedCaregiverId}
+              showAllOption
+              embedded
+            />
+          }
         />
-      ) : null}
+      )}
 
       {showAllCaregivers ? (
         <AdminAllDaySheet
