@@ -74,7 +74,10 @@ async function saveExpenses(
   }));
 
   const { error: insertError } = await db.from('time_entry_expenses').insert(rows);
-  return insertError?.message ?? null;
+  if (insertError) {
+    return `Hours saved, but expenses could not be saved (${insertError.message}). Re-enter expenses and save again.`;
+  }
+  return null;
 }
 
 export function DayEntrySheet({
@@ -241,9 +244,10 @@ export function DayEntrySheet({
     onClose();
   }
 
-  const billableHours = entry
-    ? getBillableHours(entry, readOnlyExpenses)
-    : getBillableHours({ hours }, expenses);
+  const billableHours = getBillableHours(
+    { hours },
+    editable ? expenses : readOnlyExpenses,
+  );
 
   return (
     <BottomSheet open={open} onClose={onClose} title={formatDisplayDate(workDate)}>

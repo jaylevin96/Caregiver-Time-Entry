@@ -100,7 +100,10 @@ export function AdminPayPage() {
           .order('created_at');
 
         if (expensesError) {
-          setError(expensesError.message);
+          setError(
+            `Could not load expenses: ${expensesError.message}. Totals may be incomplete.`,
+          );
+          setEntries([]);
           setExpensesByEntryId({});
         } else {
           setExpensesByEntryId(groupExpensesByEntryId(expenses ?? []));

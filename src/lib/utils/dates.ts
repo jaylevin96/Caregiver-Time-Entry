@@ -143,6 +143,7 @@ export function formatHours(hours: number): string {
   return hours.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
 }
 
+/** Compact duration for lists (e.g. "1 hr 15 min"). Prefer formatHoursReadable for aria/pills. */
 export function formatHoursAsDuration(hours: number): string {
   const totalMinutes = Math.round(hours * 60);
   const wholeHours = Math.floor(totalMinutes / 60);
@@ -154,7 +155,7 @@ export function formatHoursAsDuration(hours: number): string {
   return `${hourPart} ${minutes} min`;
 }
 
-/** User-facing duration, e.g. "4 hours 15 minutes" or "4 hours". */
+/** Full duration for calendar pills and aria labels, e.g. "4 hours 15 minutes". */
 export function formatHoursReadable(hours: number): string {
   if (hours <= 0) return '0 hours';
 

@@ -64,8 +64,8 @@ export function AdminAllDaySheet({
     };
   }, [open, workDate]);
 
-  const caregiverNames = new Map(
-    caregivers.map((caregiver) => [caregiver.id, caregiver.display_name]),
+  const caregiverById = new Map(
+    caregivers.map((caregiver) => [caregiver.id, caregiver]),
   );
 
   const totalHours = entries.reduce(
@@ -117,6 +117,8 @@ export function AdminAllDaySheet({
               const reimbursement = getExpenseReimbursement(
                 entry.time_entry_expenses,
               );
+              const caregiver = caregiverById.get(entry.caregiver_id);
+              const color = caregiver?.calendar_color ?? '#2563eb';
 
               return (
                 <li
@@ -126,8 +128,15 @@ export function AdminAllDaySheet({
                     status === 'paid' ? 'bg-success/5' : 'bg-surface-raised',
                   ].join(' ')}
                 >
-                  <span className="font-medium">
-                    {caregiverNames.get(entry.caregiver_id) ?? 'Unknown'}
+                  <span className="flex min-w-0 items-center gap-2 font-medium">
+                    <span
+                      className="h-2.5 w-2.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: color }}
+                      aria-hidden="true"
+                    />
+                    <span className="truncate">
+                      {caregiver?.display_name ?? 'Unknown'}
+                    </span>
                   </span>
                   <div className="flex shrink-0 items-center gap-2">
                     {badge ? (
@@ -143,7 +152,10 @@ export function AdminAllDaySheet({
                       </span>
                     ) : null}
                     <div className="text-right">
-                      <span className="text-accent font-bold tabular-nums">
+                      <span
+                        className="font-bold tabular-nums"
+                        style={{ color }}
+                      >
                         {formatHours(billableHours)}h
                       </span>
                       {reimbursement > 0 ? (

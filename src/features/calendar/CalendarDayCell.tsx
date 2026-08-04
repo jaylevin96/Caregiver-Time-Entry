@@ -270,6 +270,6 @@ export function buildDayPills(
   return pills.sort((a, b) => {
     const nameCompare = a.displayName.localeCompare(b.displayName);
     if (nameCompare !== 0) return nameCompare;
-    return a.isExpense ? 1 : -1;
+    return Number(Boolean(a.isExpense)) - Number(Boolean(b.isExpense));
   });
 }

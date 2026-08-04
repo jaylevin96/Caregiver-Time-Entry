@@ -5,7 +5,7 @@ import { getBillableHours } from '@/lib/utils/expenses';
 import type { CalendarEntry } from '@/lib/utils/entry-status';
 import type { TimeEntry, TimeEntryExpense } from '@/types/database';
 
-type EntryWithExpenses = TimeEntry & {
+export type EntryWithExpenses = TimeEntry & {
   time_entry_expenses?: TimeEntryExpense[];
   expenses?: TimeEntryExpense[];
 };
@@ -16,7 +16,8 @@ interface UseDateRangeEntriesOptions {
   end: string | undefined;
 }
 
-function groupEntriesByDate(
+/** Groups raw DB rows by work_date (used by all-caregivers calendar). */
+export function groupEntriesByDate(
   entries: EntryWithExpenses[],
 ): Record<string, CalendarEntry[]> {
   const byDate: Record<string, CalendarEntry[]> = {};
@@ -30,7 +31,8 @@ function groupEntriesByDate(
   return byDate;
 }
 
-function aggregateEntriesByDate(
+/** One aggregate CalendarEntry per day; hours are already billable totals. */
+export function aggregateEntriesByDate(
   entries: EntryWithExpenses[],
 ): Record<string, CalendarEntry> {
   const byDate = groupEntriesByDate(entries);
@@ -61,7 +63,8 @@ function aggregateEntriesByDate(
   return map;
 }
 
-function toCalendarEntry(entry: EntryWithExpenses): CalendarEntry {
+/** Normalize nested `time_entry_expenses` or `expenses` onto CalendarEntry. */
+export function toCalendarEntry(entry: EntryWithExpenses): CalendarEntry {
   const expenses = entry.time_entry_expenses ?? entry.expenses ?? [];
   return {
     id: entry.id,
