@@ -40,7 +40,11 @@ export function AdminUsersPage() {
     setError(null);
 
     const [profilesResult, ratesResult] = await Promise.all([
-      db.from('profiles').select('*').order('display_name'),
+      db
+        .from('profiles')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_name'),
       db
         .from('caregiver_rates')
         .select('*')
@@ -105,9 +109,7 @@ export function AdminUsersPage() {
     if (rpcError) {
       setError(rpcError.message);
     } else if (data) {
-      setUsers((prev) =>
-        prev.map((item) => (item.id === user.id ? data : item)),
-      );
+      setUsers((prev) => prev.filter((item) => item.id !== user.id));
     }
 
     setBusyUserId(null);
@@ -214,37 +216,30 @@ export function AdminUsersPage() {
                     <p className="truncate font-medium">{user.display_name}</p>
                     <p className="text-text-muted truncate text-sm">{user.email}</p>
                   </div>
-                  <div className="flex shrink-0 flex-col items-end gap-1">
-                    <span
-                      className={[
-                        'rounded-full px-2.5 py-1 text-xs font-medium capitalize',
-                        user.role === 'admin'
-                          ? 'bg-accent/10 text-accent'
-                          : 'bg-surface text-text-muted',
-                      ].join(' ')}
-                    >
-                      {user.role}
-                    </span>
-                    {!user.is_active ? (
-                      <span className="rounded-full bg-danger/10 px-2.5 py-1 text-xs font-medium text-danger">
-                        Inactive
-                      </span>
-                    ) : null}
-                  </div>
+                  <span
+                    className={[
+                      'shrink-0 rounded-full px-2.5 py-1 text-xs font-medium capitalize',
+                      user.role === 'admin'
+                        ? 'bg-accent/10 text-accent'
+                        : 'bg-surface text-text-muted',
+                    ].join(' ')}
+                  >
+                    {user.role}
+                  </span>
                 </div>
 
                 {user.role === 'caregiver' ? (
                   <>
                     <CaregiverColorPicker
                       user={user}
-                      disabled={isBusy || !user.is_active}
+                      disabled={isBusy}
                       onChange={handleColorChange}
                     />
                     <CaregiverRateEditor
                       userId={user.id}
                       rates={ratesByCaregiver[user.id] ?? []}
                       defaultRate={defaultRate}
-                      disabled={isBusy || !user.is_active}
+                      disabled={isBusy}
                       onSave={handleRateChange}
                     />
                   </>
@@ -256,7 +251,7 @@ export function AdminUsersPage() {
                       <Button
                         variant="secondary"
                         className="min-h-10 flex-1 text-sm"
-                        disabled={isBusy || !user.is_active}
+                        disabled={isBusy}
                         onClick={() => handleRoleChange(user, 'admin')}
                       >
                         Make admin
@@ -265,7 +260,7 @@ export function AdminUsersPage() {
                       <Button
                         variant="secondary"
                         className="min-h-10 flex-1 text-sm"
-                        disabled={isBusy || isSelf || !user.is_active}
+                        disabled={isBusy || isSelf}
                         onClick={() => handleRoleChange(user, 'caregiver')}
                       >
                         {isSelf ? 'You (admin)' : 'Make caregiver'}
@@ -304,7 +299,7 @@ export function AdminUsersPage() {
                         </Button>
                       </div>
                     </div>
-                  ) : user.is_active && !isSelf ? (
+                  ) : !isSelf ? (
                     <Button
                       variant="danger"
                       className="min-h-10 w-full text-sm"
