@@ -5,35 +5,47 @@ import { getBillableHours } from '@/lib/utils/expenses';
 import type { CalendarEntry } from '@/lib/utils/entry-status';
 import type { TimeEntry, TimeEntryExpense } from '@/types/database';
 
+type EntryWithExpenses = TimeEntry & {
+  time_entry_expenses?: TimeEntryExpense[];
+  expenses?: TimeEntryExpense[];
+};
+
 interface UseDateRangeEntriesOptions {
   caregiverId: string | undefined;
   start: string | undefined;
   end: string | undefined;
 }
 
-function aggregateEntriesByDate(
-  entries: (TimeEntry & { time_entry_expenses?: TimeEntryExpense[] })[],
-): Record<string, CalendarEntry> {
-  const byDate = new Map<string, (TimeEntry & { time_entry_expenses?: TimeEntryExpense[] })[]>();
+function groupEntriesByDate(
+  entries: EntryWithExpenses[],
+): Record<string, CalendarEntry[]> {
+  const byDate: Record<string, CalendarEntry[]> = {};
 
   for (const entry of entries) {
-    const dayEntries = byDate.get(entry.work_date) ?? [];
-    dayEntries.push(entry);
-    byDate.set(entry.work_date, dayEntries);
+    const dayEntries = byDate[entry.work_date] ?? [];
+    dayEntries.push(toCalendarEntry(entry));
+    byDate[entry.work_date] = dayEntries;
   }
 
+  return byDate;
+}
+
+function aggregateEntriesByDate(
+  entries: EntryWithExpenses[],
+): Record<string, CalendarEntry> {
+  const byDate = groupEntriesByDate(entries);
   const map: Record<string, CalendarEntry> = {};
 
-  for (const [workDate, dayEntries] of byDate) {
+  for (const [workDate, dayEntries] of Object.entries(byDate)) {
     const paidCount = dayEntries.filter((entry) => entry.payment_id).length;
     const allPaid = paidCount === dayEntries.length && paidCount > 0;
     const first = dayEntries[0];
-    const allExpenses = dayEntries.flatMap((entry) => entry.time_entry_expenses ?? []);
+    const allExpenses = dayEntries.flatMap((entry) => entry.expenses ?? []);
 
     map[workDate] = {
       ...first,
       hours: dayEntries.reduce(
-        (sum, entry) => sum + getBillableHours(entry, entry.time_entry_expenses),
+        (sum, entry) => sum + getBillableHours(entry, entry.expenses),
         0,
       ),
       payment_id: allPaid ? first.payment_id : null,
@@ -49,12 +61,19 @@ function aggregateEntriesByDate(
   return map;
 }
 
-function toCalendarEntry(
-  entry: TimeEntry & { time_entry_expenses?: TimeEntryExpense[] },
-): CalendarEntry {
-  const expenses = entry.time_entry_expenses ?? [];
+function toCalendarEntry(entry: EntryWithExpenses): CalendarEntry {
+  const expenses = entry.time_entry_expenses ?? entry.expenses ?? [];
   return {
-    ...entry,
+    id: entry.id,
+    caregiver_id: entry.caregiver_id,
+    work_date: entry.work_date,
+    hours: entry.hours,
+    notes: entry.notes,
+    payment_id: entry.payment_id,
+    created_at: entry.created_at,
+    updated_at: entry.updated_at,
+    created_by: entry.created_by,
+    updated_by: entry.updated_by,
     expenses,
   };
 }
@@ -67,12 +86,16 @@ export function useDateRangeEntries({
   const [entriesByDate, setEntriesByDate] = useState<
     Record<string, CalendarEntry>
   >({});
+  const [multiEntriesByDate, setMultiEntriesByDate] = useState<
+    Record<string, CalendarEntry[]>
+  >({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!caregiverId || !start || !end) {
       setEntriesByDate({});
+      setMultiEntriesByDate({});
       setLoading(false);
       return;
     }
@@ -94,16 +117,20 @@ export function useDateRangeEntries({
     if (fetchError) {
       setError(fetchError.message);
       setEntriesByDate({});
+      setMultiEntriesByDate({});
     } else {
-      const map: Record<string, CalendarEntry> = {};
+      const rows = (data ?? []) as EntryWithExpenses[];
       if (caregiverId === ALL_CAREGIVERS_ID) {
-        Object.assign(map, aggregateEntriesByDate(data ?? []));
+        setEntriesByDate(aggregateEntriesByDate(rows));
+        setMultiEntriesByDate(groupEntriesByDate(rows));
       } else {
-        for (const entry of data ?? []) {
+        const map: Record<string, CalendarEntry> = {};
+        for (const entry of rows) {
           map[entry.work_date] = toCalendarEntry(entry);
         }
+        setEntriesByDate(map);
+        setMultiEntriesByDate({});
       }
-      setEntriesByDate(map);
     }
 
     setLoading(false);
@@ -113,5 +140,11 @@ export function useDateRangeEntries({
     load();
   }, [load]);
 
-  return { entriesByDate, loading, error, refresh: load };
+  return {
+    entriesByDate,
+    multiEntriesByDate,
+    loading,
+    error,
+    refresh: load,
+  };
 }

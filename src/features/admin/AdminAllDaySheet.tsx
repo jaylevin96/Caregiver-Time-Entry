@@ -3,7 +3,11 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import { InlineSpinner } from '@/components/ui/InlineSpinner';
 import { db } from '@/lib/supabase';
 import { formatDisplayDate, formatHours } from '@/lib/utils/dates';
-import { getBillableHours } from '@/lib/utils/expenses';
+import {
+  formatCompactExpense,
+  getBillableHours,
+  getExpenseReimbursement,
+} from '@/lib/utils/expenses';
 import { getDayEntryStatus, getStatusLabel } from '@/lib/utils/entry-status';
 import type { Profile, TimeEntry, TimeEntryExpense } from '@/types/database';
 
@@ -68,6 +72,10 @@ export function AdminAllDaySheet({
     (sum, entry) => sum + getBillableHours(entry, entry.time_entry_expenses),
     0,
   );
+  const totalReimbursement = entries.reduce(
+    (sum, entry) => sum + getExpenseReimbursement(entry.time_entry_expenses),
+    0,
+  );
 
   return (
     <BottomSheet
@@ -85,9 +93,16 @@ export function AdminAllDaySheet({
         </p>
       ) : (
         <div className="space-y-4">
-          <p className="text-accent text-center text-2xl font-bold tabular-nums">
-            {formatHours(totalHours)}h total
-          </p>
+          <div className="text-center">
+            <p className="text-accent text-2xl font-bold tabular-nums">
+              {formatHours(totalHours)}h total
+            </p>
+            {totalReimbursement > 0 ? (
+              <p className="text-text-muted mt-1 text-sm font-semibold tabular-nums">
+                {formatCompactExpense(totalReimbursement)} reimbursement
+              </p>
+            ) : null}
+          </div>
 
           <ul className="space-y-2">
             {entries.map((entry) => {
@@ -95,6 +110,13 @@ export function AdminAllDaySheet({
                 ? getDayEntryStatus(workDate, entry)
                 : 'editable';
               const badge = getStatusLabel(status);
+              const billableHours = getBillableHours(
+                entry,
+                entry.time_entry_expenses,
+              );
+              const reimbursement = getExpenseReimbursement(
+                entry.time_entry_expenses,
+              );
 
               return (
                 <li
@@ -120,9 +142,16 @@ export function AdminAllDaySheet({
                         {badge}
                       </span>
                     ) : null}
-                    <span className="text-accent font-bold tabular-nums">
-                      {formatHours(getBillableHours(entry, entry.time_entry_expenses))}h
-                    </span>
+                    <div className="text-right">
+                      <span className="text-accent font-bold tabular-nums">
+                        {formatHours(billableHours)}h
+                      </span>
+                      {reimbursement > 0 ? (
+                        <p className="text-text-muted text-xs font-semibold tabular-nums">
+                          {formatCompactExpense(reimbursement)}
+                        </p>
+                      ) : null}
+                    </div>
                   </div>
                 </li>
               );

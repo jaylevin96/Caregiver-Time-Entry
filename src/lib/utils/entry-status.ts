@@ -1,5 +1,5 @@
 import { isBeyondCurrentWeek, isPayrollWeekLocked } from '@/lib/utils/dates';
-import type { TimeEntry } from '@/types/database';
+import type { TimeEntry, TimeEntryExpense } from '@/types/database';
 
 export type DayEntryStatus =
   | 'empty'
@@ -17,7 +17,7 @@ export interface AggregateEntryMeta {
 
 export type CalendarEntry = TimeEntry & {
   _aggregate?: AggregateEntryMeta;
-  expenses?: { hours: number }[];
+  expenses?: Pick<TimeEntryExpense, 'hours' | 'amount'>[];
 };
 
 export function getDayEntryStatus(

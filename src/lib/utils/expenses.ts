@@ -39,6 +39,18 @@ export function getExpenseHours(expenses: { hours: number }[] | null | undefined
   return expenses?.reduce((sum, expense) => sum + expense.hours, 0) ?? 0;
 }
 
+export function getExpenseReimbursement(
+  expenses: { amount: number }[] | null | undefined,
+): number {
+  return expenses?.reduce((sum, expense) => sum + expense.amount, 0) ?? 0;
+}
+
+/** Compact expense label for calendar cells, e.g. "$25". */
+export function formatCompactExpense(amount: number): string {
+  if (Number.isInteger(amount)) return `$${amount}`;
+  return `$${amount.toFixed(2)}`;
+}
+
 export function getBillableHours(
   entry: { hours: number },
   expenses?: { hours: number }[] | null,

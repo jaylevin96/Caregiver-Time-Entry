@@ -154,6 +154,28 @@ export function formatHoursAsDuration(hours: number): string {
   return `${hourPart} ${minutes} min`;
 }
 
+/** User-facing duration, e.g. "4 hours 15 minutes" or "4 hours". */
+export function formatHoursReadable(hours: number): string {
+  if (hours <= 0) return '0 hours';
+
+  const wholeHours = Math.floor(hours + 0.0001);
+  const minutes = Math.round((hours - wholeHours) * 60);
+
+  if (minutes === 0) {
+    return wholeHours === 1 ? '1 hour' : `${wholeHours} hours`;
+  }
+
+  const hourPart =
+    wholeHours === 0
+      ? ''
+      : wholeHours === 1
+        ? '1 hour '
+        : `${wholeHours} hours `;
+  const minutePart = minutes === 1 ? '1 minute' : `${minutes} minutes`;
+
+  return `${hourPart}${minutePart}`.trim();
+}
+
 export function isValidQuarterHours(hours: number): boolean {
   return hours > 0 && hours <= 24 && Math.abs(hours * 4 - Math.round(hours * 4)) < 0.001;
 }

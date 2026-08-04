@@ -8,6 +8,8 @@ interface CaregiverFilterProps {
   selectedId: string | null;
   onSelect: (id: string) => void;
   showAllOption?: boolean;
+  /** When true, omits outer border wrapper (parent provides sticky container). */
+  embedded?: boolean;
 }
 
 export function CaregiverFilter({
@@ -15,6 +17,7 @@ export function CaregiverFilter({
   selectedId,
   onSelect,
   showAllOption = false,
+  embedded = false,
 }: CaregiverFilterProps) {
   if (caregivers.length === 0) {
     return (
@@ -25,7 +28,7 @@ export function CaregiverFilter({
   }
 
   return (
-    <div className="border-border border-b px-3 py-3 sm:px-4">
+    <div className={embedded ? 'px-3 py-3 sm:px-4' : 'border-border border-b px-3 py-3 sm:px-4'}>
       <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {showAllOption ? (
           <FilterPill
