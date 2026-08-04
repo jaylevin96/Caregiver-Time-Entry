@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import {
   formatHours,
+  formatHoursAsDuration,
   isValidQuarterHours,
   roundToQuarterHours,
 } from '@/lib/utils/dates';
@@ -177,6 +178,16 @@ export function HoursInput({ value, onChange, disabled = false }: HoursInputProp
           +
         </Button>
       </div>
+
+      {value > 0 && isValidQuarterHours(value) ? (
+        <p className="text-text-muted mt-2 text-center text-sm">
+          = {formatHoursAsDuration(value)}
+        </p>
+      ) : (
+        <p className="text-text-muted mt-2 text-center text-xs">
+          0.25 = 15 min · 0.5 = 30 min · 0.75 = 45 min
+        </p>
+      )}
 
       <div className="mt-4">
         <p className="text-text-muted mb-2 text-center text-xs font-medium tracking-wide uppercase">

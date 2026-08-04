@@ -1,9 +1,10 @@
 import { formatHours } from '@/lib/utils/dates';
-import type { TimeEntry } from '@/types/database';
+import { getDisplayHours } from '@/lib/utils/expenses';
+import type { CalendarEntry } from '@/lib/utils/entry-status';
 
 interface CalendarSummaryBarProps {
   label: string;
-  entriesByDate: Record<string, TimeEntry>;
+  entriesByDate: Record<string, CalendarEntry>;
   dates: string[];
 }
 
@@ -18,7 +19,7 @@ export function CalendarSummaryBar({
   for (const date of dates) {
     const entry = entriesByDate[date];
     if (entry) {
-      totalHours += entry.hours;
+      totalHours += getDisplayHours(entry);
       daysWithEntries += 1;
     }
   }

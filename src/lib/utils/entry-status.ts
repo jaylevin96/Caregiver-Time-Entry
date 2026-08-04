@@ -17,6 +17,7 @@ export interface AggregateEntryMeta {
 
 export type CalendarEntry = TimeEntry & {
   _aggregate?: AggregateEntryMeta;
+  expenses?: { hours: number }[];
 };
 
 export function getDayEntryStatus(

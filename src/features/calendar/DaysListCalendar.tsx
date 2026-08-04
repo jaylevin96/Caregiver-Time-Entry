@@ -16,6 +16,7 @@ import {
   showsPaymentIndicator,
   type CalendarEntry,
 } from '@/lib/utils/entry-status';
+import { getDisplayHours } from '@/lib/utils/expenses';
 
 interface DaysListCalendarProps {
   entriesByDate: Record<string, CalendarEntry>;
@@ -216,7 +217,7 @@ function DayListRow({
                   : undefined
               }
             >
-              {formatHours(entry.hours)}h
+              {formatHours(getDisplayHours(entry))}h
             </span>
           ) : readOnly || status !== 'empty' ? null : (
             <span className="text-text-muted text-sm">Add</span>

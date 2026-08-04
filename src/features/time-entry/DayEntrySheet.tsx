@@ -3,6 +3,10 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Button } from '@/components/ui/Button';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { InlineSpinner } from '@/components/ui/InlineSpinner';
+import {
+  ExpenseLineItemsEditor,
+  ExpenseLineItemsReadOnly,
+} from '@/features/time-entry/ExpenseLineItemsEditor';
 import { HoursInput } from '@/features/time-entry/HoursInput';
 import { getLastHours, saveLastHours } from '@/features/time-entry/last-hours';
 import { db } from '@/lib/supabase';
@@ -15,11 +19,18 @@ import {
   isValidQuarterHours,
 } from '@/lib/utils/dates';
 import {
+  expenseToDraft,
+  getBillableHours,
+  parseExpenseAmount,
+  validateExpenseDrafts,
+  type ExpenseDraft,
+} from '@/lib/utils/expenses';
+import {
   canEditEntry,
   getDayEntryStatus,
   getStatusLabel,
 } from '@/lib/utils/entry-status';
-import type { TimeEntry } from '@/types/database';
+import type { TimeEntry, TimeEntryExpense } from '@/types/database';
 
 interface DayEntrySheetProps {
   open: boolean;
@@ -30,6 +41,40 @@ interface DayEntrySheetProps {
   readOnly?: boolean;
   onClose: () => void;
   onSaved: () => void;
+}
+
+async function loadExpenses(timeEntryId: string): Promise<TimeEntryExpense[]> {
+  const { data, error } = await db
+    .from('time_entry_expenses')
+    .select('*')
+    .eq('time_entry_id', timeEntryId)
+    .order('created_at');
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+async function saveExpenses(
+  timeEntryId: string,
+  drafts: ExpenseDraft[],
+): Promise<string | null> {
+  const { error: deleteError } = await db
+    .from('time_entry_expenses')
+    .delete()
+    .eq('time_entry_id', timeEntryId);
+
+  if (deleteError) return deleteError.message;
+  if (drafts.length === 0) return null;
+
+  const rows = drafts.map((draft) => ({
+    time_entry_id: timeEntryId,
+    hours: draft.hours,
+    note: draft.note.trim(),
+    amount: parseExpenseAmount(draft.amount) ?? 0,
+  }));
+
+  const { error: insertError } = await db.from('time_entry_expenses').insert(rows);
+  return insertError?.message ?? null;
 }
 
 export function DayEntrySheet({
@@ -45,6 +90,9 @@ export function DayEntrySheet({
   const userId = actorId ?? caregiverId;
   const [hours, setHours] = useState(0);
   const [notes, setNotes] = useState('');
+  const [expenses, setExpenses] = useState<ExpenseDraft[]>([]);
+  const [readOnlyExpenses, setReadOnlyExpenses] = useState<TimeEntryExpense[]>([]);
+  const [loadingExpenses, setLoadingExpenses] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -61,9 +109,36 @@ export function DayEntrySheet({
       !readOnly && (workDate ? canEditEntry(workDate, entry) : false);
     setHours(entry?.hours ?? (canEdit ? getLastHours() : 0));
     setNotes(entry?.notes ?? '');
+    setExpenses([]);
+    setReadOnlyExpenses([]);
     setError(null);
     setSaved(false);
     setConfirmDelete(false);
+
+    if (!entry?.id) return;
+
+    let cancelled = false;
+    setLoadingExpenses(true);
+
+    loadExpenses(entry.id)
+      .then((loaded) => {
+        if (cancelled) return;
+        if (canEdit) {
+          setExpenses(loaded.map(expenseToDraft));
+        } else {
+          setReadOnlyExpenses(loaded);
+        }
+      })
+      .catch((loadError: Error) => {
+        if (!cancelled) setError(loadError.message);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingExpenses(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [open, entry, workDate, readOnly]);
 
   if (!workDate) return null;
@@ -76,8 +151,16 @@ export function DayEntrySheet({
       return;
     }
 
+    const expenseError = validateExpenseDrafts(expenses, hours);
+    if (expenseError) {
+      setError(expenseError);
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
+
+    let entryId = entry?.id;
 
     if (entry) {
       const { error: updateError } = await db
@@ -95,17 +178,32 @@ export function DayEntrySheet({
         return;
       }
     } else {
-      const { error: insertError } = await db.from('time_entries').insert({
-        caregiver_id: caregiverId,
-        work_date: workDate,
-        hours,
-        notes: notes.trim() || null,
-        created_by: userId,
-        updated_by: userId,
-      });
+      const { data: inserted, error: insertError } = await db
+        .from('time_entries')
+        .insert({
+          caregiver_id: caregiverId,
+          work_date: workDate,
+          hours,
+          notes: notes.trim() || null,
+          created_by: userId,
+          updated_by: userId,
+        })
+        .select('id')
+        .single();
 
-      if (insertError) {
-        setError(insertError.message);
+      if (insertError || !inserted) {
+        setError(insertError?.message ?? 'Could not save entry.');
+        setSubmitting(false);
+        return;
+      }
+
+      entryId = inserted.id;
+    }
+
+    if (entryId) {
+      const expenseSaveError = await saveExpenses(entryId, expenses);
+      if (expenseSaveError) {
+        setError(expenseSaveError);
         setSubmitting(false);
         return;
       }
@@ -142,6 +240,10 @@ export function DayEntrySheet({
     onSaved();
     onClose();
   }
+
+  const billableHours = entry
+    ? getBillableHours(entry, readOnlyExpenses)
+    : getBillableHours({ hours }, expenses);
 
   return (
     <BottomSheet open={open} onClose={onClose} title={formatDisplayDate(workDate)}>
@@ -180,6 +282,18 @@ export function DayEntrySheet({
               />
             </label>
 
+            {loadingExpenses ? (
+              <div className="flex justify-center py-4">
+                <InlineSpinner size="sm" />
+              </div>
+            ) : (
+              <ExpenseLineItemsEditor
+                items={expenses}
+                onChange={setExpenses}
+                disabled={submitting}
+              />
+            )}
+
             {error ? <ErrorBanner message={error} /> : null}
 
             <div className="space-y-2">
@@ -206,7 +320,7 @@ export function DayEntrySheet({
                 confirmDelete ? (
                   <div className="border-danger/20 bg-danger/5 space-y-2 rounded-xl border p-3">
                     <p className="text-sm font-medium">
-                      Delete {formatHours(entry.hours)} hours for this day?
+                      Delete {formatHours(billableHours)} hours for this day?
                     </p>
                     <p className="text-text-muted text-sm">This cannot be undone.</p>
                     <div className="flex gap-2">
@@ -249,9 +363,15 @@ export function DayEntrySheet({
                 <div className="border-border bg-surface rounded-2xl border p-4">
                   <p className="text-text-muted text-sm">Hours</p>
                   <p className="text-3xl font-semibold tabular-nums">
-                    {formatHours(entry.hours)}
+                    {formatHours(billableHours)}
                     <span className="text-text-muted ml-1 text-xl font-normal">h</span>
                   </p>
+                  {billableHours !== entry.hours ? (
+                    <p className="text-text-muted mt-1 text-sm tabular-nums">
+                      {formatHours(entry.hours)}h worked +{' '}
+                      {formatHours(billableHours - entry.hours)}h expenses
+                    </p>
+                  ) : null}
                 </div>
                 {entry.notes ? (
                   <div>
@@ -259,6 +379,13 @@ export function DayEntrySheet({
                     <p className="text-base">{entry.notes}</p>
                   </div>
                 ) : null}
+                {loadingExpenses ? (
+                  <div className="flex justify-center py-4">
+                    <InlineSpinner size="sm" />
+                  </div>
+                ) : (
+                  <ExpenseLineItemsReadOnly items={readOnlyExpenses} />
+                )}
               </>
             ) : (
               <p className="text-text-muted text-sm">

@@ -143,6 +143,17 @@ export function formatHours(hours: number): string {
   return hours.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
 }
 
+export function formatHoursAsDuration(hours: number): string {
+  const totalMinutes = Math.round(hours * 60);
+  const wholeHours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  if (wholeHours === 0) return `${minutes} min`;
+  if (minutes === 0) return wholeHours === 1 ? '1 hour' : `${wholeHours} hours`;
+  const hourPart = wholeHours === 1 ? '1 hr' : `${wholeHours} hr`;
+  return `${hourPart} ${minutes} min`;
+}
+
 export function isValidQuarterHours(hours: number): boolean {
   return hours > 0 && hours <= 24 && Math.abs(hours * 4 - Math.round(hours * 4)) < 0.001;
 }

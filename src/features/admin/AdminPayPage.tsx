@@ -8,15 +8,17 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { InlineSpinner } from '@/components/ui/InlineSpinner';
 import { db } from '@/lib/supabase';
+import { groupExpensesByEntryId } from '@/lib/utils/expenses';
 import {
   buildPaymentSummaryText,
+  buildReimbursementSummaryText,
   calculatePaymentTotal,
   formatCurrency,
+  formatEntryHoursLine,
   formatPayPeriodRange,
-  formatShortDate,
 } from '@/lib/utils/payment-format';
 import { formatHours, getChicagoDateString } from '@/lib/utils/dates';
-import type { CaregiverRate, Payment, TimeEntry } from '@/types/database';
+import type { CaregiverRate, Payment, TimeEntry, TimeEntryExpense } from '@/types/database';
 
 export function AdminPayPage() {
   const { caregivers, loading: caregiversLoading } = useCaregivers();
@@ -27,11 +29,18 @@ export function AdminPayPage() {
   const [periodStart, setPeriodStart] = useState('');
   const [periodEnd, setPeriodEnd] = useState('');
   const [entries, setEntries] = useState<TimeEntry[]>([]);
+  const [expensesByEntryId, setExpensesByEntryId] = useState<
+    Record<string, TimeEntryExpense[]>
+  >({});
   const [rates, setRates] = useState<CaregiverRate[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [lastPayment, setLastPayment] = useState<Payment | null>(null);
+  const [paidEntries, setPaidEntries] = useState<TimeEntry[]>([]);
+  const [paidExpensesByEntryId, setPaidExpensesByEntryId] = useState<
+    Record<string, TimeEntryExpense[]>
+  >({});
   const [copyMessage, setCopyMessage] = useState<string | null>(null);
 
   const activeCaregiverId =
@@ -42,12 +51,14 @@ export function AdminPayPage() {
   const loadSummary = useCallback(async () => {
     if (!activeCaregiverId || !periodStart || !periodEnd) {
       setEntries([]);
+      setExpensesByEntryId({});
       return;
     }
 
     if (periodEnd < periodStart) {
       setError('End date must be on or after start date.');
       setEntries([]);
+      setExpensesByEntryId({});
       return;
     }
 
@@ -73,8 +84,28 @@ export function AdminPayPage() {
     if (entriesResult.error) {
       setError(entriesResult.error.message);
       setEntries([]);
+      setExpensesByEntryId({});
     } else {
-      setEntries(entriesResult.data ?? []);
+      const loadedEntries = entriesResult.data ?? [];
+      setEntries(loadedEntries);
+
+      if (loadedEntries.length === 0) {
+        setExpensesByEntryId({});
+      } else {
+        const entryIds = loadedEntries.map((entry) => entry.id);
+        const { data: expenses, error: expensesError } = await db
+          .from('time_entry_expenses')
+          .select('*')
+          .in('time_entry_id', entryIds)
+          .order('created_at');
+
+        if (expensesError) {
+          setError(expensesError.message);
+          setExpensesByEntryId({});
+        } else {
+          setExpensesByEntryId(groupExpensesByEntryId(expenses ?? []));
+        }
+      }
     }
 
     if (!ratesResult.error) {
@@ -100,34 +131,40 @@ export function AdminPayPage() {
 
   useEffect(() => {
     setLastPayment(null);
+    setPaidEntries([]);
+    setPaidExpensesByEntryId({});
     setCopyMessage(null);
   }, [activeCaregiverId, periodStart, periodEnd]);
 
-  const { totalHours, totalAmount } = calculatePaymentTotal(
-    entries,
+  const activeEntries = lastPayment ? paidEntries : entries;
+  const activeExpensesByEntryId = lastPayment
+    ? paidExpensesByEntryId
+    : expensesByEntryId;
+
+  const { totalHours, totalAmount, totalReimbursement } = calculatePaymentTotal(
+    activeEntries,
     rates,
     defaultRate,
+    activeExpensesByEntryId,
   );
 
-  const summaryText = useMemo(() => {
-    if (lastPayment) {
-      return buildPaymentSummaryText(
-        lastPayment.period_start,
-        lastPayment.period_end,
-        lastPayment.total_hours,
-      );
-    }
+  const hoursSummaryText = useMemo(() => {
+    if (activeEntries.length === 0) return '';
+    return buildPaymentSummaryText(
+      activeEntries,
+      lastPayment?.total_hours ?? totalHours,
+      activeExpensesByEntryId,
+    );
+  }, [activeEntries, activeExpensesByEntryId, lastPayment, totalHours]);
 
-    if (periodStart && periodEnd && entries.length > 0) {
-      return buildPaymentSummaryText(
-        periodStart,
-        periodEnd,
-        totalHours,
-      );
-    }
-
-    return '';
-  }, [lastPayment, periodStart, periodEnd, entries.length, totalHours]);
+  const reimbursementSummaryText = useMemo(() => {
+    const reimbursementTotal =
+      lastPayment?.total_reimbursement ?? totalReimbursement;
+    return buildReimbursementSummaryText(
+      activeExpensesByEntryId,
+      reimbursementTotal,
+    );
+  }, [activeExpensesByEntryId, lastPayment, totalReimbursement]);
 
   async function handleMarkPaid() {
     if (!activeCaregiverId || !periodStart || !periodEnd || entries.length === 0) {
@@ -149,17 +186,30 @@ export function AdminPayPage() {
       return;
     }
 
+    setPaidEntries(entries);
+    setPaidExpensesByEntryId(expensesByEntryId);
     setLastPayment(data);
     setSubmitting(false);
     await loadSummary();
   }
 
-  async function handleCopy() {
-    if (!summaryText) return;
+  async function handleCopyHours() {
+    if (!hoursSummaryText) return;
 
     try {
-      await navigator.clipboard.writeText(summaryText);
-      setCopyMessage('Copied to clipboard');
+      await navigator.clipboard.writeText(hoursSummaryText);
+      setCopyMessage('Hours payment copied');
+    } catch {
+      setCopyMessage('Could not copy — select and copy manually');
+    }
+  }
+
+  async function handleCopyReimbursement() {
+    if (!reimbursementSummaryText) return;
+
+    try {
+      await navigator.clipboard.writeText(reimbursementSummaryText);
+      setCopyMessage('Reimbursement copied');
     } catch {
       setCopyMessage('Could not copy — select and copy manually');
     }
@@ -199,7 +249,7 @@ export function AdminPayPage() {
                 <InlineSpinner size="sm" />
               </div>
             ) : activeCaregiver && periodStart && periodEnd ? (
-              <div className="border-border bg-surface-raised space-y-3 rounded-xl border p-3 sm:p-4">
+              <div className="border-border bg-surface-raised space-y-4 rounded-xl border p-3 sm:p-4">
                 <div>
                   <p className="text-text-muted text-sm">Caregiver</p>
                   <p className="font-medium">{activeCaregiver.display_name}</p>
@@ -218,44 +268,85 @@ export function AdminPayPage() {
                   </p>
                 ) : (
                   <>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <p className="text-text-muted text-sm">Total hours</p>
-                        <p className="text-xl font-semibold tabular-nums">
-                          {formatHours(lastPayment?.total_hours ?? totalHours)}
-                        </p>
+                    <div className="space-y-3">
+                      <p className="text-sm font-semibold">Hours payment</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <p className="text-text-muted text-sm">Total hours</p>
+                          <p className="text-xl font-semibold tabular-nums">
+                            {formatHours(lastPayment?.total_hours ?? totalHours)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-text-muted text-sm">Amount owed</p>
+                          <p className="text-xl font-semibold tabular-nums">
+                            {formatCurrency(lastPayment?.total_amount ?? totalAmount)}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-text-muted text-sm">Amount owed</p>
-                        <p className="text-xl font-semibold tabular-nums">
-                          {formatCurrency(
-                            lastPayment?.total_amount ?? totalAmount,
-                          )}
-                        </p>
-                      </div>
+
+                      {!lastPayment && entries.length > 0 ? (
+                        <ul className="text-text-muted max-h-32 space-y-1 overflow-y-auto text-sm">
+                          {entries.map((entry) => (
+                            <li key={entry.id}>
+                              {formatEntryHoursLine(
+                                entry,
+                                expensesByEntryId[entry.id] ?? [],
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
+
+                      {hoursSummaryText ? (
+                        <pre className="border-border bg-surface whitespace-pre-wrap rounded-lg border p-3 text-sm leading-relaxed">
+                          {hoursSummaryText}
+                        </pre>
+                      ) : null}
+
+                      {hoursSummaryText ? (
+                        <Button
+                          fullWidth
+                          variant="secondary"
+                          onClick={handleCopyHours}
+                        >
+                          Copy Hours Payment
+                        </Button>
+                      ) : null}
                     </div>
 
-                    {!lastPayment && entries.length > 0 ? (
-                      <ul className="text-text-muted max-h-32 space-y-1 overflow-y-auto text-sm">
-                        {entries.map((entry) => (
-                          <li key={entry.id}>
-                            {formatShortDate(entry.work_date)} ·{' '}
-                            {formatHours(entry.hours)} h
-                          </li>
-                        ))}
-                      </ul>
+                    {(lastPayment?.total_reimbursement ?? totalReimbursement) > 0 ? (
+                      <div className="border-border space-y-3 border-t pt-4">
+                        <p className="text-sm font-semibold">Expense reimbursement</p>
+                        <div>
+                          <p className="text-text-muted text-sm">Amount owed</p>
+                          <p className="text-xl font-semibold tabular-nums">
+                            {formatCurrency(
+                              lastPayment?.total_reimbursement ?? totalReimbursement,
+                            )}
+                          </p>
+                        </div>
+
+                        {reimbursementSummaryText ? (
+                          <pre className="border-border bg-surface whitespace-pre-wrap rounded-lg border p-3 text-sm leading-relaxed">
+                            {reimbursementSummaryText}
+                          </pre>
+                        ) : null}
+
+                        <Button
+                          fullWidth
+                          variant="secondary"
+                          onClick={handleCopyReimbursement}
+                        >
+                          Copy Reimbursement
+                        </Button>
+                      </div>
                     ) : null}
 
                     {lastPayment ? (
                       <p className="text-success text-sm font-medium">
-                        Marked paid. Copy the summary below for Zelle.
+                        Marked paid. Copy the summaries below for Zelle.
                       </p>
-                    ) : null}
-
-                    {summaryText ? (
-                      <pre className="border-border bg-surface whitespace-pre-wrap rounded-lg border p-3 text-sm leading-relaxed">
-                        {summaryText}
-                      </pre>
                     ) : null}
 
                     <div className="space-y-2">
@@ -266,16 +357,6 @@ export function AdminPayPage() {
                           onClick={handleMarkPaid}
                         >
                           {submitting ? 'Processing…' : 'Mark paid'}
-                        </Button>
-                      ) : null}
-
-                      {summaryText ? (
-                        <Button
-                          fullWidth
-                          variant="secondary"
-                          onClick={handleCopy}
-                        >
-                          Copy Payment Info
                         </Button>
                       ) : null}
 

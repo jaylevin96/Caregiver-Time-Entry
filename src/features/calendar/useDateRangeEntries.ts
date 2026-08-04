@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ALL_CAREGIVERS_ID } from '@/features/admin/CaregiverFilter';
 import { db } from '@/lib/supabase';
+import { getBillableHours } from '@/lib/utils/expenses';
 import type { CalendarEntry } from '@/lib/utils/entry-status';
-import type { TimeEntry } from '@/types/database';
+import type { TimeEntry, TimeEntryExpense } from '@/types/database';
 
 interface UseDateRangeEntriesOptions {
   caregiverId: string | undefined;
@@ -11,9 +12,9 @@ interface UseDateRangeEntriesOptions {
 }
 
 function aggregateEntriesByDate(
-  entries: TimeEntry[],
+  entries: (TimeEntry & { time_entry_expenses?: TimeEntryExpense[] })[],
 ): Record<string, CalendarEntry> {
-  const byDate = new Map<string, TimeEntry[]>();
+  const byDate = new Map<string, (TimeEntry & { time_entry_expenses?: TimeEntryExpense[] })[]>();
 
   for (const entry of entries) {
     const dayEntries = byDate.get(entry.work_date) ?? [];
@@ -27,12 +28,17 @@ function aggregateEntriesByDate(
     const paidCount = dayEntries.filter((entry) => entry.payment_id).length;
     const allPaid = paidCount === dayEntries.length && paidCount > 0;
     const first = dayEntries[0];
+    const allExpenses = dayEntries.flatMap((entry) => entry.time_entry_expenses ?? []);
 
     map[workDate] = {
       ...first,
-      hours: dayEntries.reduce((sum, entry) => sum + entry.hours, 0),
+      hours: dayEntries.reduce(
+        (sum, entry) => sum + getBillableHours(entry, entry.time_entry_expenses),
+        0,
+      ),
       payment_id: allPaid ? first.payment_id : null,
       notes: null,
+      expenses: allExpenses,
       _aggregate: {
         entryCount: dayEntries.length,
         paidCount,
@@ -41,6 +47,16 @@ function aggregateEntriesByDate(
   }
 
   return map;
+}
+
+function toCalendarEntry(
+  entry: TimeEntry & { time_entry_expenses?: TimeEntryExpense[] },
+): CalendarEntry {
+  const expenses = entry.time_entry_expenses ?? [];
+  return {
+    ...entry,
+    expenses,
+  };
 }
 
 export function useDateRangeEntries({
@@ -66,7 +82,7 @@ export function useDateRangeEntries({
 
     const query = db
       .from('time_entries')
-      .select('*')
+      .select('*, time_entry_expenses(*)')
       .gte('work_date', start)
       .lte('work_date', end);
 
@@ -84,7 +100,7 @@ export function useDateRangeEntries({
         Object.assign(map, aggregateEntriesByDate(data ?? []));
       } else {
         for (const entry of data ?? []) {
-          map[entry.work_date] = entry;
+          map[entry.work_date] = toCalendarEntry(entry);
         }
       }
       setEntriesByDate(map);

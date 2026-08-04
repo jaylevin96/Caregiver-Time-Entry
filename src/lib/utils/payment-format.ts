@@ -1,5 +1,6 @@
-import type { CaregiverRate } from '@/types/database';
+import type { CaregiverRate, TimeEntry, TimeEntryExpense } from '@/types/database';
 import { getEffectiveRate } from '@/features/admin/CaregiverFilter';
+import { getBillableHours } from '@/lib/utils/expenses';
 import { formatHours, parseDateOnly } from '@/lib/utils/dates';
 
 function formatMonthDay(y: number, m: number, d: number): string {
@@ -50,31 +51,78 @@ export function formatCurrency(amount: number): string {
   });
 }
 
-export function buildPaymentSummaryText(
-  periodStart: string,
-  periodEnd: string,
-  totalHours: number,
+export function formatEntryHoursLine(
+  entry: TimeEntry,
+  expenses: TimeEntryExpense[] = [],
 ): string {
-  return `${formatPayPeriodRange(periodStart, periodEnd)}\n${formatHours(totalHours)} hours`;
+  const billableHours = getBillableHours(entry, expenses);
+  const expenseHours = billableHours - entry.hours;
+
+  if (expenseHours > 0) {
+    return `${formatShortDate(entry.work_date)} · ${formatHours(entry.hours)} h worked + ${formatHours(expenseHours)} h expenses`;
+  }
+
+  return `${formatShortDate(entry.work_date)} · ${formatHours(entry.hours)} h`;
+}
+
+export function buildPaymentSummaryText(
+  entries: TimeEntry[],
+  totalHours: number,
+  expensesByEntryId: Record<string, TimeEntryExpense[]> = {},
+): string {
+  const lines = entries.map((entry) =>
+    formatEntryHoursLine(entry, expensesByEntryId[entry.id] ?? []),
+  );
+  lines.push(`${formatHours(totalHours)} hours`);
+  return lines.join('\n');
+}
+
+export function buildReimbursementSummaryText(
+  expensesByEntryId: Record<string, TimeEntryExpense[]>,
+  totalReimbursement: number,
+): string {
+  if (totalReimbursement <= 0) return '';
+
+  const lines = ['Reimbursement'];
+  for (const expenses of Object.values(expensesByEntryId)) {
+    for (const expense of expenses) {
+      lines.push(`${expense.note}: ${formatCurrency(expense.amount)}`);
+    }
+  }
+  lines.push(formatCurrency(totalReimbursement));
+  return lines.join('\n');
 }
 
 export function calculatePaymentTotal(
-  entries: { hours: number; work_date: string }[],
+  entries: TimeEntry[],
   rates: CaregiverRate[],
   defaultRate: number,
-): { totalHours: number; totalAmount: number } {
+  expensesByEntryId: Record<string, TimeEntryExpense[]> = {},
+): {
+  totalHours: number;
+  totalAmount: number;
+  totalReimbursement: number;
+} {
   let totalHours = 0;
   let totalAmount = 0;
+  let totalReimbursement = 0;
 
   for (const entry of entries) {
-    totalHours += entry.hours;
+    const entryExpenses = expensesByEntryId[entry.id] ?? [];
+    const billableHours = getBillableHours(entry, entryExpenses);
+
+    totalHours += billableHours;
     totalAmount +=
-      entry.hours *
-      getEffectiveRate(rates, defaultRate, entry.work_date);
+      billableHours * getEffectiveRate(rates, defaultRate, entry.work_date);
+
+    for (const expense of entryExpenses) {
+      totalReimbursement += expense.amount;
+    }
   }
 
   return {
     totalHours: Math.round(totalHours * 100) / 100,
     totalAmount: Math.round(totalAmount * 100) / 100,
+    totalReimbursement: Math.round(totalReimbursement * 100) / 100,
   };
 }

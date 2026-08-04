@@ -3,8 +3,9 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import { InlineSpinner } from '@/components/ui/InlineSpinner';
 import { db } from '@/lib/supabase';
 import { formatDisplayDate, formatHours } from '@/lib/utils/dates';
+import { getBillableHours } from '@/lib/utils/expenses';
 import { getDayEntryStatus, getStatusLabel } from '@/lib/utils/entry-status';
-import type { Profile, TimeEntry } from '@/types/database';
+import type { Profile, TimeEntry, TimeEntryExpense } from '@/types/database';
 
 interface AdminAllDaySheetProps {
   open: boolean;
@@ -19,7 +20,9 @@ export function AdminAllDaySheet({
   caregivers,
   onClose,
 }: AdminAllDaySheetProps) {
-  const [entries, setEntries] = useState<TimeEntry[]>([]);
+  const [entries, setEntries] = useState<
+    (TimeEntry & { time_entry_expenses?: TimeEntryExpense[] })[]
+  >([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -35,7 +38,7 @@ export function AdminAllDaySheet({
 
       const { data, error } = await db
         .from('time_entries')
-        .select('*')
+        .select('*, time_entry_expenses(*)')
         .eq('work_date', workDate)
         .order('caregiver_id');
 
@@ -61,7 +64,10 @@ export function AdminAllDaySheet({
     caregivers.map((caregiver) => [caregiver.id, caregiver.display_name]),
   );
 
-  const totalHours = entries.reduce((sum, entry) => sum + entry.hours, 0);
+  const totalHours = entries.reduce(
+    (sum, entry) => sum + getBillableHours(entry, entry.time_entry_expenses),
+    0,
+  );
 
   return (
     <BottomSheet
@@ -115,7 +121,7 @@ export function AdminAllDaySheet({
                       </span>
                     ) : null}
                     <span className="text-accent font-bold tabular-nums">
-                      {formatHours(entry.hours)}h
+                      {formatHours(getBillableHours(entry, entry.time_entry_expenses))}h
                     </span>
                   </div>
                 </li>

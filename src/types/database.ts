@@ -24,6 +24,17 @@ export interface TimeEntry {
   updated_by: string;
 }
 
+export interface TimeEntryExpense {
+  id: string;
+  time_entry_id: string;
+  hours: number;
+  note: string;
+  amount: number;
+  payment_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Payment {
   id: string;
   caregiver_id: string;
@@ -32,6 +43,7 @@ export interface Payment {
   total_hours: number;
   hourly_rate: number;
   total_amount: number;
+  total_reimbursement: number;
   paid_at: string;
   paid_by: string;
   notes: string | null;
@@ -64,6 +76,16 @@ export interface Database {
         > & { payment_id?: string | null };
         Update: Partial<
           Omit<TimeEntry, 'id' | 'caregiver_id' | 'created_at' | 'created_by'>
+        >;
+      };
+      time_entry_expenses: {
+        Row: TimeEntryExpense;
+        Insert: Omit<
+          TimeEntryExpense,
+          'id' | 'created_at' | 'updated_at' | 'payment_id'
+        > & { payment_id?: string | null };
+        Update: Partial<
+          Omit<TimeEntryExpense, 'id' | 'time_entry_id' | 'created_at'>
         >;
       };
       payments: {

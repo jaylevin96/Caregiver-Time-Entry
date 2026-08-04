@@ -1,4 +1,5 @@
 import { formatHours } from '@/lib/utils/dates';
+import { getDisplayHours } from '@/lib/utils/expenses';
 import {
   getDayEntryStatus,
   getStatusLabel,
@@ -24,7 +25,9 @@ function statusAriaLabel(
   entry?: CalendarEntry,
   readOnly = false,
 ): string {
-  const hours = entry ? `${formatHours(entry.hours)} hours` : 'no hours';
+  const hours = entry
+    ? `${formatHours(getDisplayHours(entry))} hours`
+    : 'no hours';
   switch (status) {
     case 'paid':
       return `${hours}, paid`;
@@ -125,7 +128,7 @@ export function CalendarDayCell({
             ].join(' ')}
             style={accentStyle}
           >
-            {formatHours(entry.hours)}
+            {formatHours(getDisplayHours(entry))}
           </span>
         ) : !readOnly && inMonth && status === 'empty' ? (
           <span className="text-border text-lg leading-none" aria-hidden="true">
