@@ -55,7 +55,7 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     return (
       <AccessMessage
         title="Account inactive"
-        description="Your account has been deactivated. Contact an admin for help."
+        description="Your account has been deactivated."
       />
     );
   }

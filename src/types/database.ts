@@ -121,6 +121,10 @@ export interface Database {
         Args: { p_user_id: string; p_role: UserRole };
         Returns: Profile;
       };
+      deactivate_user: {
+        Args: { p_user_id: string };
+        Returns: Profile;
+      };
       create_care_hours_profile: {
         Args: {
           p_user_id: string;

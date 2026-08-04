@@ -31,6 +31,9 @@ export function AdminUsersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyUserId, setBusyUserId] = useState<string | null>(null);
+  const [confirmDeactivateId, setConfirmDeactivateId] = useState<string | null>(
+    null,
+  );
 
   const loadUsers = useCallback(async () => {
     setLoading(true);
@@ -70,10 +73,33 @@ export function AdminUsersPage() {
 
     setBusyUserId(user.id);
     setError(null);
+    setConfirmDeactivateId(null);
 
     const { data, error: rpcError } = await db.rpc('set_user_role', {
       p_user_id: user.id,
       p_role: role,
+    });
+
+    if (rpcError) {
+      setError(rpcError.message);
+    } else if (data) {
+      setUsers((prev) =>
+        prev.map((item) => (item.id === user.id ? data : item)),
+      );
+    }
+
+    setBusyUserId(null);
+  }
+
+  async function handleDeactivate(user: Profile) {
+    if (!user.is_active) return;
+
+    setBusyUserId(user.id);
+    setError(null);
+    setConfirmDeactivateId(null);
+
+    const { data, error: rpcError } = await db.rpc('deactivate_user', {
+      p_user_id: user.id,
     });
 
     if (rpcError) {
@@ -152,8 +178,8 @@ export function AdminUsersPage() {
       <div className="mb-3">
         <h2 className="text-lg font-semibold">Users</h2>
         <p className="text-text-muted mt-1 text-sm">
-          Promote caregivers to admin or demote admins. Set calendar colors and
-          hourly rates for each caregiver.
+          Promote caregivers to admin, deactivate users, and set calendar colors
+          and hourly rates for each caregiver.
         </p>
       </div>
 
@@ -188,55 +214,106 @@ export function AdminUsersPage() {
                     <p className="truncate font-medium">{user.display_name}</p>
                     <p className="text-text-muted truncate text-sm">{user.email}</p>
                   </div>
-                  <span
-                    className={[
-                      'shrink-0 rounded-full px-2.5 py-1 text-xs font-medium capitalize',
-                      user.role === 'admin'
-                        ? 'bg-accent/10 text-accent'
-                        : 'bg-surface text-text-muted',
-                    ].join(' ')}
-                  >
-                    {user.role}
-                  </span>
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <span
+                      className={[
+                        'rounded-full px-2.5 py-1 text-xs font-medium capitalize',
+                        user.role === 'admin'
+                          ? 'bg-accent/10 text-accent'
+                          : 'bg-surface text-text-muted',
+                      ].join(' ')}
+                    >
+                      {user.role}
+                    </span>
+                    {!user.is_active ? (
+                      <span className="rounded-full bg-danger/10 px-2.5 py-1 text-xs font-medium text-danger">
+                        Inactive
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
 
                 {user.role === 'caregiver' ? (
                   <>
                     <CaregiverColorPicker
                       user={user}
-                      disabled={isBusy}
+                      disabled={isBusy || !user.is_active}
                       onChange={handleColorChange}
                     />
                     <CaregiverRateEditor
                       userId={user.id}
                       rates={ratesByCaregiver[user.id] ?? []}
                       defaultRate={defaultRate}
-                      disabled={isBusy}
+                      disabled={isBusy || !user.is_active}
                       onSave={handleRateChange}
                     />
                   </>
                 ) : null}
 
-                <div className="mt-4 flex gap-2">
-                  {user.role === 'caregiver' ? (
+                <div className="mt-4 flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    {user.role === 'caregiver' ? (
+                      <Button
+                        variant="secondary"
+                        className="min-h-10 flex-1 text-sm"
+                        disabled={isBusy || !user.is_active}
+                        onClick={() => handleRoleChange(user, 'admin')}
+                      >
+                        Make admin
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="secondary"
+                        className="min-h-10 flex-1 text-sm"
+                        disabled={isBusy || isSelf || !user.is_active}
+                        onClick={() => handleRoleChange(user, 'caregiver')}
+                      >
+                        {isSelf ? 'You (admin)' : 'Make caregiver'}
+                      </Button>
+                    )}
+                  </div>
+
+                  {confirmDeactivateId === user.id ? (
+                    <div className="border-danger/20 bg-danger/5 space-y-2 rounded-xl border p-3">
+                      <p className="text-sm font-medium">
+                        Deactivate {user.display_name}?
+                      </p>
+                      <p className="text-text-muted text-sm">
+                        They will no longer be able to access the app. Past
+                        entries and payments are kept. To regain access they
+                        would need to register a new account.
+                      </p>
+                      <div className="flex gap-2">
+                        <Button
+                          fullWidth
+                          variant="danger"
+                          className="min-h-10 text-sm"
+                          disabled={isBusy}
+                          onClick={() => handleDeactivate(user)}
+                        >
+                          {isBusy ? 'Deactivating…' : 'Yes, deactivate'}
+                        </Button>
+                        <Button
+                          fullWidth
+                          variant="secondary"
+                          className="min-h-10 text-sm"
+                          disabled={isBusy}
+                          onClick={() => setConfirmDeactivateId(null)}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : user.is_active && !isSelf ? (
                     <Button
-                      variant="secondary"
-                      className="min-h-10 flex-1 text-sm"
+                      variant="danger"
+                      className="min-h-10 w-full text-sm"
                       disabled={isBusy}
-                      onClick={() => handleRoleChange(user, 'admin')}
+                      onClick={() => setConfirmDeactivateId(user.id)}
                     >
-                      Make admin
+                      Deactivate
                     </Button>
-                  ) : (
-                    <Button
-                      variant="secondary"
-                      className="min-h-10 flex-1 text-sm"
-                      disabled={isBusy || isSelf}
-                      onClick={() => handleRoleChange(user, 'caregiver')}
-                    >
-                      {isSelf ? 'You (admin)' : 'Make caregiver'}
-                    </Button>
-                  )}
+                  ) : null}
                 </div>
               </li>
             );
