@@ -64,16 +64,15 @@ export function useDateRangeEntries({
       setMultiEntriesByDate({});
     } else {
       const rows = (data ?? []) as EntryWithExpenses[];
+      setMultiEntriesByDate(groupEntriesByDate(rows));
       if (caregiverId === ALL_CAREGIVERS_ID) {
         setEntriesByDate(aggregateEntriesByDate(rows));
-        setMultiEntriesByDate(groupEntriesByDate(rows));
       } else {
         const map: Record<string, CalendarEntry> = {};
         for (const entry of rows) {
           map[entry.work_date] = toCalendarEntry(entry);
         }
         setEntriesByDate(map);
-        setMultiEntriesByDate({});
       }
     }
 

@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { ALL_CAREGIVERS_ID } from '@/features/admin/CaregiverFilter';
 import { CalendarSummaryBar } from '@/features/calendar/CalendarSummaryBar';
 import {
   dayPillsForCalendar,
@@ -53,9 +52,6 @@ export function CalendarContainer({
   const [year, setYear] = useState(todayY);
   const [month, setMonth] = useState(todayM - 1);
   const [weekStart, setWeekStart] = useState(() => startOfCalendarWeek(today));
-
-  const showMultiPills =
-    caregiverId === ALL_CAREGIVERS_ID && caregivers.length > 0;
 
   const caregiversById = useMemo(
     () =>
@@ -118,8 +114,13 @@ export function CalendarContainer({
   }, [refreshSignal, refresh]);
 
   function getDayPills(date: string): CaregiverDayPill[] | undefined {
-    if (!showMultiPills) return undefined;
-    return dayPillsForCalendar(multiEntriesByDate[date], caregiversById);
+    const grouped = multiEntriesByDate[date];
+    const entries = grouped?.length
+      ? grouped
+      : entriesByDate[date]
+        ? [entriesByDate[date]]
+        : undefined;
+    return dayPillsForCalendar(entries, caregiversById);
   }
 
   function handleSelectDate(date: string) {
@@ -156,7 +157,7 @@ export function CalendarContainer({
           readOnly={readOnly}
           accentColor={accentColor}
           hideStatus={hideStatus}
-          getDayPills={showMultiPills ? getDayPills : undefined}
+          getDayPills={getDayPills}
           onMonthChange={handleMonthChange}
           onSelectDate={handleSelectDate}
         />
@@ -171,7 +172,7 @@ export function CalendarContainer({
           readOnly={readOnly}
           accentColor={accentColor}
           hideStatus={hideStatus}
-          getDayPills={showMultiPills ? getDayPills : undefined}
+          getDayPills={getDayPills}
           onWeekChange={setWeekStart}
           onSelectDate={handleSelectDate}
         />
@@ -180,8 +181,8 @@ export function CalendarContainer({
       {view === 'days' ? (
         <DaysListCalendar
           entriesByDate={entriesByDate}
-          multiEntriesByDate={showMultiPills ? multiEntriesByDate : undefined}
-          caregiversById={showMultiPills ? caregiversById : undefined}
+          multiEntriesByDate={multiEntriesByDate}
+          caregiversById={caregiversById}
           loading={loading}
           error={error}
           readOnly={readOnly}

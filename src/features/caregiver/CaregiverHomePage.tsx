@@ -20,8 +20,10 @@ export function CaregiverHomePage() {
     <AppShell title="Calendar" subtitle={profile?.display_name}>
       <CalendarContainer
         caregiverId={profile?.id}
+        caregivers={profile ? [profile] : []}
         onSelectDate={handleSelectDate}
         refreshSignal={refreshSignal}
+        accentColor={profile?.calendar_color}
       />
 
       <DayEntrySheet

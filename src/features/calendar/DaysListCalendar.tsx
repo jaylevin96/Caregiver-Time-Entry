@@ -123,13 +123,13 @@ export function DaysListCalendar({
             </h3>
             <ul className="space-y-2">
               {group.dates.map((date) => {
-                const dayPills =
-                  multiEntriesByDate && caregiversById
-                    ? dayPillsForCalendar(
-                        multiEntriesByDate[date],
-                        caregiversById,
-                      )
-                    : undefined;
+                const dayEntries =
+                  multiEntriesByDate?.[date] ??
+                  (entriesByDate[date] ? [entriesByDate[date]] : undefined);
+                const dayPills = dayPillsForCalendar(
+                  dayEntries,
+                  caregiversById ?? new Map(),
+                );
 
                 return (
                   <DayListRow
