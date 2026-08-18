@@ -1,4 +1,5 @@
 import {
+  addDays,
   endOfMonth,
   endOfPayrollWeek,
   getChicagoDateString,
@@ -26,9 +27,12 @@ export function DateRangeFilter({
   const today = getChicagoDateString();
   const weekStart = startOfPayrollWeek(today);
   const weekEnd = endOfPayrollWeek(today);
+  const lastWeekStart = addDays(weekStart, -7);
+  const lastWeekEnd = addDays(weekEnd, -7);
   const monthStart = startOfMonth(today);
   const monthEnd = endOfMonth(today);
   const isThisWeek = startValue === weekStart && endValue === weekEnd;
+  const isLastWeek = startValue === lastWeekStart && endValue === lastWeekEnd;
   const isThisMonth = startValue === monthStart && endValue === monthEnd;
 
   function applyRange(start: string, end: string) {
@@ -38,11 +42,16 @@ export function DateRangeFilter({
 
   return (
     <div className="space-y-2">
-      <div className="flex gap-2">
+      <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <PresetPill
           label="This week"
           selected={isThisWeek}
           onClick={() => applyRange(weekStart, weekEnd)}
+        />
+        <PresetPill
+          label="Last week"
+          selected={isLastWeek}
+          onClick={() => applyRange(lastWeekStart, lastWeekEnd)}
         />
         <PresetPill
           label="This month"
