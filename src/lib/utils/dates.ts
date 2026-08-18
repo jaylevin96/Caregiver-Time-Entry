@@ -95,6 +95,17 @@ export function getMonthLabel(year: number, month: number): string {
   }).format(new Date(year, month, 1));
 }
 
+export function startOfMonth(dateStr: string): string {
+  const { y, m } = parseDateOnly(dateStr);
+  return formatDateOnly(y, m, 1);
+}
+
+export function endOfMonth(dateStr: string): string {
+  const { y, m } = parseDateOnly(dateStr);
+  const lastDay = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  return formatDateOnly(y, m, lastDay);
+}
+
 /** Inclusive calendar grid range (Sun–Sat weeks) for a month view. */
 export function getMonthGridRange(year: number, month: number): {
   start: string;

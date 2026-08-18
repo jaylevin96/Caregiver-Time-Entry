@@ -6,8 +6,10 @@ import {
   formatHoursAsDuration,
   formatHoursReadable,
   getChicagoDateString,
+  endOfMonth,
   getMonthGridRange,
   isBeyondCurrentWeek,
+  startOfMonth,
   isPayrollWeekLocked,
   isValidQuarterHours,
   payrollLockDate,
@@ -55,6 +57,13 @@ describe('date grid and arithmetic', () => {
   it('adds days across month boundaries', () => {
     expect(addDays('2026-01-31', 1)).toBe('2026-02-01');
     expect(addDays('2026-02-28', 1)).toBe('2026-03-01');
+  });
+
+  it('resolves first and last day of the month', () => {
+    expect(startOfMonth('2026-08-18')).toBe('2026-08-01');
+    expect(endOfMonth('2026-08-18')).toBe('2026-08-31');
+    expect(endOfMonth('2026-02-10')).toBe('2026-02-28');
+    expect(endOfMonth('2028-02-10')).toBe('2028-02-29');
   });
 
   it('builds a Sun–Sat month grid covering the full month', () => {

@@ -1,3 +1,11 @@
+import {
+  endOfMonth,
+  endOfPayrollWeek,
+  getChicagoDateString,
+  startOfMonth,
+  startOfPayrollWeek,
+} from '@/lib/utils/dates';
+
 interface DateRangeFilterProps {
   startLabel?: string;
   endLabel?: string;
@@ -15,15 +23,69 @@ export function DateRangeFilter({
   onStartChange,
   onEndChange,
 }: DateRangeFilterProps) {
+  const today = getChicagoDateString();
+  const weekStart = startOfPayrollWeek(today);
+  const weekEnd = endOfPayrollWeek(today);
+  const monthStart = startOfMonth(today);
+  const monthEnd = endOfMonth(today);
+  const isThisWeek = startValue === weekStart && endValue === weekEnd;
+  const isThisMonth = startValue === monthStart && endValue === monthEnd;
+
+  function applyRange(start: string, end: string) {
+    onStartChange(start);
+    onEndChange(end);
+  }
+
   return (
-    <div className="border-border bg-surface grid grid-cols-2 divide-x rounded-xl border">
-      <DateField
-        label={startLabel}
-        value={startValue}
-        onChange={onStartChange}
-      />
-      <DateField label={endLabel} value={endValue} onChange={onEndChange} />
+    <div className="space-y-2">
+      <div className="flex gap-2">
+        <PresetPill
+          label="This week"
+          selected={isThisWeek}
+          onClick={() => applyRange(weekStart, weekEnd)}
+        />
+        <PresetPill
+          label="This month"
+          selected={isThisMonth}
+          onClick={() => applyRange(monthStart, monthEnd)}
+        />
+      </div>
+
+      <div className="border-border bg-surface grid grid-cols-2 divide-x rounded-xl border">
+        <DateField
+          label={startLabel}
+          value={startValue}
+          onChange={onStartChange}
+        />
+        <DateField label={endLabel} value={endValue} onChange={onEndChange} />
+      </div>
     </div>
+  );
+}
+
+function PresetPill({
+  label,
+  selected,
+  onClick,
+}: {
+  label: string;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={selected}
+      className={[
+        'min-h-10 shrink-0 rounded-full px-4 text-sm font-medium transition-colors',
+        selected
+          ? 'bg-accent text-white'
+          : 'bg-surface text-text-muted border-border border',
+      ].join(' ')}
+    >
+      {label}
+    </button>
   );
 }
 

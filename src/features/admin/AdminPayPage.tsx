@@ -14,10 +14,14 @@ import {
   buildReimbursementSummaryText,
   calculatePaymentTotal,
   formatCurrency,
-  formatEntryHoursLine,
   formatPayPeriodRange,
 } from '@/lib/utils/payment-format';
-import { formatHours, getChicagoDateString } from '@/lib/utils/dates';
+import {
+  endOfMonth,
+  formatHours,
+  getChicagoDateString,
+  startOfMonth,
+} from '@/lib/utils/dates';
 import type { CaregiverRate, Payment, TimeEntry, TimeEntryExpense } from '@/types/database';
 
 export function AdminPayPage() {
@@ -143,10 +147,8 @@ export function AdminPayPage() {
 
   useEffect(() => {
     const today = getChicagoDateString();
-    const [y, m] = today.split('-').map(Number);
-    const start = `${y}-${String(m).padStart(2, '0')}-01`;
-    setPeriodStart(start);
-    setPeriodEnd(today);
+    setPeriodStart(startOfMonth(today));
+    setPeriodEnd(endOfMonth(today));
   }, []);
 
   useEffect(() => {
@@ -303,19 +305,6 @@ export function AdminPayPage() {
                           </p>
                         </div>
                       </div>
-
-                      {!lastPayment && entries.length > 0 ? (
-                        <ul className="text-text-muted max-h-32 space-y-1 overflow-y-auto text-sm">
-                          {entries.map((entry) => (
-                            <li key={entry.id}>
-                              {formatEntryHoursLine(
-                                entry,
-                                expensesByEntryId[entry.id] ?? [],
-                              )}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : null}
 
                       {hoursSummaryText ? (
                         <pre className="border-border bg-surface whitespace-pre-wrap rounded-lg border p-3 text-sm leading-relaxed">
