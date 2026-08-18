@@ -51,7 +51,11 @@ export function AdminPayPage() {
   const [paidExpensesByEntryId, setPaidExpensesByEntryId] = useState<
     Record<string, TimeEntryExpense[]>
   >({});
-  const [copyMessage, setCopyMessage] = useState<string | null>(null);
+  const [hoursCopiedAt, setHoursCopiedAt] = useState(0);
+  const [reimbursementCopiedAt, setReimbursementCopiedAt] = useState(0);
+  const [copyError, setCopyError] = useState<'hours' | 'reimbursement' | null>(
+    null,
+  );
 
   const activeCaregiverId =
     selectedCaregiverId ?? caregivers[0]?.id ?? undefined;
@@ -155,8 +159,22 @@ export function AdminPayPage() {
     setLastPayment(null);
     setPaidEntries([]);
     setPaidExpensesByEntryId({});
-    setCopyMessage(null);
+    setHoursCopiedAt(0);
+    setReimbursementCopiedAt(0);
+    setCopyError(null);
   }, [activeCaregiverId, periodStart, periodEnd]);
+
+  useEffect(() => {
+    if (!hoursCopiedAt) return;
+    const timeoutId = window.setTimeout(() => setHoursCopiedAt(0), 2000);
+    return () => window.clearTimeout(timeoutId);
+  }, [hoursCopiedAt]);
+
+  useEffect(() => {
+    if (!reimbursementCopiedAt) return;
+    const timeoutId = window.setTimeout(() => setReimbursementCopiedAt(0), 2000);
+    return () => window.clearTimeout(timeoutId);
+  }, [reimbursementCopiedAt]);
 
   const activeEntries = lastPayment ? paidEntries : entries;
   const activeExpensesByEntryId = lastPayment
@@ -214,9 +232,11 @@ export function AdminPayPage() {
 
     try {
       await navigator.clipboard.writeText(hoursSummaryText);
-      setCopyMessage('Hours payment copied');
+      setCopyError(null);
+      setHoursCopiedAt(Date.now());
     } catch {
-      setCopyMessage('Could not copy — select and copy manually');
+      setHoursCopiedAt(0);
+      setCopyError('hours');
     }
   }
 
@@ -225,9 +245,11 @@ export function AdminPayPage() {
 
     try {
       await navigator.clipboard.writeText(reimbursementSummaryText);
-      setCopyMessage('Reimbursement copied');
+      setCopyError(null);
+      setReimbursementCopiedAt(Date.now());
     } catch {
-      setCopyMessage('Could not copy — select and copy manually');
+      setReimbursementCopiedAt(0);
+      setCopyError('reimbursement');
     }
   }
 
@@ -313,13 +335,20 @@ export function AdminPayPage() {
                       ) : null}
 
                       {hoursSummaryText ? (
-                        <Button
-                          fullWidth
-                          variant="secondary"
-                          onClick={handleCopyHours}
-                        >
-                          Copy Hours Payment
-                        </Button>
+                        <>
+                          <Button
+                            fullWidth
+                            variant="secondary"
+                            onClick={handleCopyHours}
+                          >
+                            {hoursCopiedAt ? 'Copied!' : 'Copy Hours Payment'}
+                          </Button>
+                          {copyError === 'hours' ? (
+                            <p className="text-danger text-center text-sm">
+                              Could not copy — select and copy manually
+                            </p>
+                          ) : null}
+                        </>
                       ) : null}
                     </div>
 
@@ -346,8 +375,13 @@ export function AdminPayPage() {
                           variant="secondary"
                           onClick={handleCopyReimbursement}
                         >
-                          Copy Reimbursement
+                          {reimbursementCopiedAt ? 'Copied!' : 'Copy Reimbursement'}
                         </Button>
+                        {copyError === 'reimbursement' ? (
+                          <p className="text-danger text-center text-sm">
+                            Could not copy — select and copy manually
+                          </p>
+                        ) : null}
                       </div>
                     ) : null}
 
@@ -357,23 +391,15 @@ export function AdminPayPage() {
                       </p>
                     ) : null}
 
-                    <div className="space-y-2">
-                      {!lastPayment && entries.length > 0 ? (
-                        <Button
-                          fullWidth
-                          disabled={submitting}
-                          onClick={handleMarkPaid}
-                        >
-                          {submitting ? 'Processing…' : 'Mark paid'}
-                        </Button>
-                      ) : null}
-
-                      {copyMessage ? (
-                        <p className="text-success text-center text-sm">
-                          {copyMessage}
-                        </p>
-                      ) : null}
-                    </div>
+                    {!lastPayment && entries.length > 0 ? (
+                      <Button
+                        fullWidth
+                        disabled={submitting}
+                        onClick={handleMarkPaid}
+                      >
+                        {submitting ? 'Processing…' : 'Mark paid'}
+                      </Button>
+                    ) : null}
                   </>
                 )}
               </div>
