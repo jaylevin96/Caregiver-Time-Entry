@@ -267,12 +267,12 @@ export function buildDayPills(
   return pills.sort((a, b) => a.displayName.localeCompare(b.displayName));
 }
 
-/** Colored hours pills only when 2+ caregivers logged that day. */
+/** Colored hours pills for each caregiver who logged that day. */
 export function dayPillsForCalendar(
   entries: CalendarEntry[] | undefined,
   caregiversById: Map<string, { display_name: string; calendar_color: string }>,
 ): CaregiverDayPill[] | undefined {
   if (!entries?.length) return undefined;
   const pills = buildDayPills(entries, caregiversById);
-  return pills.length >= 2 ? pills : undefined;
+  return pills.length > 0 ? pills : undefined;
 }

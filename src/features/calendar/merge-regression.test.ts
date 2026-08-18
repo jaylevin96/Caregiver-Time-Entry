@@ -218,7 +218,7 @@ describe('merge b762032: buildDayPills (line items + main pills UI)', () => {
     expect(pills[1]?.color).toBe('#2563eb');
   });
 
-  it('dayPillsForCalendar is empty when only one caregiver logged time', () => {
+  it('dayPillsForCalendar shows a hours pill when only one caregiver logged time', () => {
     const entry = toCalendarEntry(
       makeEntry({
         id: 'e1',
@@ -231,10 +231,17 @@ describe('merge b762032: buildDayPills (line items + main pills UI)', () => {
       }),
     );
 
-    expect(dayPillsForCalendar([entry], caregiversById)).toBeUndefined();
+    expect(dayPillsForCalendar([entry], caregiversById)).toEqual([
+      expect.objectContaining({
+        key: 'alice',
+        label: '6',
+        color: '#dc2626',
+        title: expect.stringContaining('$12'),
+      }),
+    ]);
   });
 
-  it('dayPillsForCalendar is empty when one caregiver has multiple entries that day', () => {
+  it('dayPillsForCalendar rolls one caregiver with multiple entries into a single pill', () => {
     const pills = dayPillsForCalendar(
       [
         toCalendarEntry(
@@ -260,33 +267,7 @@ describe('merge b762032: buildDayPills (line items + main pills UI)', () => {
       caregiversById,
     );
 
-    expect(pills).toBeUndefined();
-    expect(
-      buildDayPills(
-        [
-          toCalendarEntry(
-            makeEntry({
-              id: 'e-hours',
-              caregiver_id: 'alice',
-              work_date: '2026-08-04',
-              hours: 3,
-            }),
-          ),
-          toCalendarEntry(
-            makeEntry({
-              id: 'e-expense',
-              caregiver_id: 'alice',
-              work_date: '2026-08-04',
-              hours: 0,
-              time_entry_expenses: [
-                makeExpense({ id: 'x1', time_entry_id: 'e-expense', amount: 25 }),
-              ],
-            }),
-          ),
-        ],
-        caregiversById,
-      ),
-    ).toEqual([
+    expect(pills).toEqual([
       expect.objectContaining({
         key: 'alice',
         label: '3',
