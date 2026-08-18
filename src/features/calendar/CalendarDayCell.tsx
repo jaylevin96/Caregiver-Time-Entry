@@ -101,7 +101,6 @@ export function CalendarDayCell({
   const hasExpense = expense > 0;
   const hasEntry = hasPills || hasHours || hasExpense;
   const isLarge = size === 'large';
-  const expandPills = Boolean(hasPills && dayPills.length <= (isLarge ? 4 : 2));
 
   return (
     <button
@@ -110,8 +109,8 @@ export function CalendarDayCell({
       aria-label={`${date}, ${statusAriaLabel(status, entry, readOnly)}`}
       style={isToday ? todayRingStyle : undefined}
       className={[
-        'relative flex touch-manipulation flex-col overflow-hidden rounded-lg transition-transform active:scale-95',
-        isLarge ? 'min-h-[8rem] aspect-auto p-1.5' : 'aspect-square p-1',
+        'relative flex touch-manipulation flex-col overflow-hidden rounded-lg p-1 transition-transform active:scale-95',
+        isLarge ? 'min-h-[5.5rem] aspect-auto' : 'aspect-square',
         inMonth ? '' : 'opacity-35',
         status === 'paid'
           ? 'bg-success/10'
@@ -159,9 +158,8 @@ export function CalendarDayCell({
         {hasPills ? (
           <span
             className={[
-              'flex w-full max-h-full flex-col items-stretch overflow-hidden',
-              isLarge ? 'gap-1' : 'gap-0.5',
-              expandPills ? 'h-full' : 'justify-center',
+              'flex w-full max-h-full flex-col items-stretch justify-center overflow-hidden px-0.5',
+              isLarge ? 'gap-0.5' : 'gap-px',
             ].join(' ')}
           >
             {dayPills.map((pill) => (
@@ -169,15 +167,8 @@ export function CalendarDayCell({
                 key={pill.key}
                 title={pill.title}
                 className={[
-                  'flex items-center justify-center truncate rounded-full text-center font-bold tabular-nums',
-                  isLarge
-                    ? [
-                        expandPills ? 'min-h-8 flex-1 px-1.5 leading-none' : 'px-1.5 py-1 leading-none',
-                        dayPills.length === 1 ? 'text-lg' : 'text-sm',
-                      ].join(' ')
-                    : expandPills
-                      ? 'min-h-5 flex-1 px-1 text-xs leading-none'
-                      : 'px-1 py-0.5 text-[11px] leading-tight',
+                  'truncate rounded-full px-1 text-center font-bold leading-tight tabular-nums',
+                  isLarge ? 'py-0.5 text-xs' : 'py-px text-[11px]',
                 ].join(' ')}
                 style={{
                   backgroundColor: pill.color,
@@ -193,7 +184,7 @@ export function CalendarDayCell({
             className={[
               accentColor ? '' : 'text-accent',
               'font-bold tabular-nums leading-none',
-              isLarge ? 'text-lg' : 'text-sm',
+              isLarge ? 'text-base' : 'text-sm',
             ].join(' ')}
             style={accentStyle}
           >
@@ -204,7 +195,7 @@ export function CalendarDayCell({
             className={[
               accentColor ? '' : 'text-accent',
               'font-bold tabular-nums leading-none',
-              isLarge ? 'text-base' : 'text-xs',
+              isLarge ? 'text-sm' : 'text-xs',
             ].join(' ')}
             style={accentStyle}
           >

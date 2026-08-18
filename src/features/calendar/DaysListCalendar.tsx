@@ -247,7 +247,7 @@ function DayListRow({
                 <span
                   key={pill.key}
                   title={pill.title}
-                  className="rounded-full px-2.5 py-1 text-sm font-bold tabular-nums"
+                  className="rounded-full px-2 py-0.5 text-xs font-bold tabular-nums"
                   style={{
                     backgroundColor: pill.color,
                     color: textColorForBackground(pill.color),
