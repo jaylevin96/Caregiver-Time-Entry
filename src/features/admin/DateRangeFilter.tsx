@@ -42,22 +42,29 @@ export function DateRangeFilter({
 
   return (
     <div className="space-y-2">
-      <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <PresetPill
-          label="This week"
-          selected={isThisWeek}
-          onClick={() => applyRange(weekStart, weekEnd)}
-        />
-        <PresetPill
-          label="Last week"
-          selected={isLastWeek}
-          onClick={() => applyRange(lastWeekStart, lastWeekEnd)}
-        />
-        <PresetPill
-          label="This month"
-          selected={isThisMonth}
-          onClick={() => applyRange(monthStart, monthEnd)}
-        />
+      <div className="space-y-1.5">
+        <p className="text-text-muted px-0.5 text-xs font-medium">Filter by</p>
+        <div
+          role="group"
+          aria-label="Filter by"
+          className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          <PresetPill
+            label="This week"
+            selected={isThisWeek}
+            onClick={() => applyRange(weekStart, weekEnd)}
+          />
+          <PresetPill
+            label="Last week"
+            selected={isLastWeek}
+            onClick={() => applyRange(lastWeekStart, lastWeekEnd)}
+          />
+          <PresetPill
+            label="This month"
+            selected={isThisMonth}
+            onClick={() => applyRange(monthStart, monthEnd)}
+          />
+        </div>
       </div>
 
       <div className="border-border bg-surface grid grid-cols-2 divide-x rounded-xl border">
