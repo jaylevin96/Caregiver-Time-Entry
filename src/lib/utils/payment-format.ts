@@ -64,9 +64,7 @@ export function formatPayHours(hours: number): string {
 }
 
 function formatReimbursementAmount(amount: number): string {
-  const rounded = Math.round(Number(amount) * 100) / 100;
-  if (Number.isInteger(rounded)) return String(rounded);
-  return String(rounded);
+  return String(Math.round(Number(amount) * 100) / 100);
 }
 
 /** Pay period range, e.g. "July 1 – 7, 2026" or "June 28 – July 4, 2026". */
