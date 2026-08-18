@@ -10,6 +10,8 @@ interface CaregiverFilterProps {
   showAllOption?: boolean;
   /** When true, omits outer border wrapper (parent provides sticky container). */
   embedded?: boolean;
+  /** Caregivers with any unpaid time entries (Pay tab). */
+  unpaidIds?: Iterable<string>;
 }
 
 export function CaregiverFilter({
@@ -18,7 +20,9 @@ export function CaregiverFilter({
   onSelect,
   showAllOption = false,
   embedded = false,
+  unpaidIds,
 }: CaregiverFilterProps) {
+  const unpaid = new Set(unpaidIds ?? []);
   if (caregivers.length === 0) {
     return (
       <p className="text-text-muted px-4 py-3 text-sm">
@@ -41,11 +45,16 @@ export function CaregiverFilter({
           const selected = caregiver.id === selectedId;
           const color = caregiver.calendar_color;
           const textColor = selected ? textColorForBackground(color) : undefined;
+          const hasUnpaid = unpaid.has(caregiver.id);
+          const labelParts = [caregiver.display_name];
+          if (hasUnpaid) labelParts.push('unpaid');
+          if (!caregiver.is_active) labelParts.push('inactive');
 
           return (
             <button
               key={caregiver.id}
               type="button"
+              aria-label={labelParts.join(', ')}
               onClick={() => onSelect(caregiver.id)}
               className={[
                 'min-h-10 shrink-0 rounded-full px-4 text-sm font-medium transition-colors',
@@ -68,6 +77,19 @@ export function CaregiverFilter({
               ) : null}
               {caregiver.display_name}
               {!caregiver.is_active ? ' (inactive)' : ''}
+              {hasUnpaid ? (
+                <span
+                  className={[
+                    'ml-1.5 inline-flex rounded-full px-1.5 py-px text-[10px] font-semibold tracking-wide uppercase',
+                    selected
+                      ? 'bg-white/25'
+                      : 'bg-warning/15 text-warning',
+                  ].join(' ')}
+                  title="Has unpaid hours on any date"
+                >
+                  Unpaid
+                </span>
+              ) : null}
             </button>
           );
         })}

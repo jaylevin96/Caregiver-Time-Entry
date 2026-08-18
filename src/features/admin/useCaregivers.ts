@@ -12,9 +12,11 @@ export function useCaregivers() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const load = useCallback(async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) {
+      setLoading(true);
+      setError(null);
+    }
 
     const [profilesResult, unpaidResult] = await Promise.all([
       db.from('profiles').select('*').order('display_name'),
@@ -62,6 +64,7 @@ export function useCaregivers() {
     profiles,
     caregivers,
     payCaregivers,
+    unpaidCaregiverIds,
     loading,
     error,
     refresh: load,

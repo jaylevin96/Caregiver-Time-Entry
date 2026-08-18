@@ -23,6 +23,7 @@ import type { CaregiverRate, Payment, TimeEntry, TimeEntryExpense } from '@/type
 export function AdminPayPage() {
   const {
     payCaregivers: caregivers,
+    unpaidCaregiverIds,
     loading: caregiversLoading,
     error: caregiversError,
     refresh: refreshCaregivers,
@@ -203,7 +204,7 @@ export function AdminPayPage() {
     setPaidExpensesByEntryId(expensesByEntryId);
     setLastPayment(data);
     setSubmitting(false);
-    await loadSummary();
+    await Promise.all([loadSummary(), refreshCaregivers({ silent: true })]);
   }
 
   async function handleCopyHours() {
@@ -249,6 +250,7 @@ export function AdminPayPage() {
             caregivers={caregivers}
             selectedId={activeCaregiverId ?? null}
             onSelect={setSelectedCaregiverId}
+            unpaidIds={unpaidCaregiverIds}
           />
 
           <div className="space-y-3 px-3 py-3 sm:px-4 sm:py-4">

@@ -57,6 +57,14 @@ describe('caregiver lists after deactivate / role change', () => {
       getPayCaregivers([alice, formerCaregiverAdmin, admin], ['promoted']).map(
         (p) => p.id,
       ),
-    ).toEqual(['alice', 'promoted']);
+    ).toEqual(['promoted', 'alice']);
+  });
+
+  it('sorts caregivers with unpaid entries first', () => {
+    const charlie = profile({ id: 'charlie', display_name: 'Charlie' });
+    expect(getPayCaregivers([alice, charlie], ['charlie']).map((p) => p.id)).toEqual([
+      'charlie',
+      'alice',
+    ]);
   });
 });
