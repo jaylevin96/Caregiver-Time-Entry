@@ -5,9 +5,17 @@ interface BottomSheetProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  /** Render above another sheet (e.g. day list → entry detail). */
+  elevated?: boolean;
 }
 
-export function BottomSheet({ open, onClose, title, children }: BottomSheetProps) {
+export function BottomSheet({
+  open,
+  onClose,
+  title,
+  children,
+  elevated = false,
+}: BottomSheetProps) {
   useEffect(() => {
     if (!open) return;
 
@@ -15,21 +23,28 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
     document.body.style.overflow = 'hidden';
 
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') onClose();
+      if (event.key !== 'Escape') return;
+      if (elevated) event.stopImmediatePropagation();
+      onClose();
     }
 
-    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keydown', onKeyDown, elevated);
 
     return () => {
       document.body.style.overflow = previousOverflow;
-      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keydown', onKeyDown, elevated);
     };
-  }, [open, onClose]);
+  }, [open, onClose, elevated]);
 
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end">
+    <div
+      className={[
+        'fixed inset-0 flex flex-col justify-end',
+        elevated ? 'z-[60]' : 'z-50',
+      ].join(' ')}
+    >
       <button
         type="button"
         aria-label="Close"

@@ -26,6 +26,7 @@ export function AdminCalendarPage() {
   );
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedEntry, setSelectedEntry] = useState<TimeEntry | undefined>();
+  const [detailEntry, setDetailEntry] = useState<TimeEntry | undefined>();
 
   const filterCaregivers = payCaregivers.length > 0 ? payCaregivers : caregivers;
   const activeFilterId = selectedCaregiverId ?? ALL_CAREGIVERS_ID;
@@ -37,13 +38,19 @@ export function AdminCalendarPage() {
   function handleSelectDate(date: string, entry: TimeEntry | undefined) {
     setSelectedDate(date);
     setSelectedEntry(entry);
+    setDetailEntry(undefined);
   }
 
   function handleFilterSelect(id: string) {
     setSelectedCaregiverId(id);
     setSelectedDate(null);
     setSelectedEntry(undefined);
+    setDetailEntry(undefined);
   }
+
+  const detailCaregiver = detailEntry
+    ? profiles.find((profile) => profile.id === detailEntry.caregiver_id)
+    : undefined;
 
   return (
     <>
@@ -80,18 +87,36 @@ export function AdminCalendarPage() {
       )}
 
       {showAllCaregivers ? (
-        <AdminAllDaySheet
-          open={selectedDate !== null}
-          workDate={selectedDate}
-          caregivers={profiles}
-          onClose={() => setSelectedDate(null)}
-        />
+        <>
+          <AdminAllDaySheet
+            open={selectedDate !== null}
+            workDate={selectedDate}
+            caregivers={profiles}
+            onClose={() => {
+              setSelectedDate(null);
+              setDetailEntry(undefined);
+            }}
+            onSelectEntry={setDetailEntry}
+          />
+          <DayEntrySheet
+            open={detailEntry !== undefined}
+            workDate={selectedDate}
+            entry={detailEntry}
+            caregiverId={detailEntry?.caregiver_id ?? ''}
+            caregiverName={detailCaregiver?.display_name}
+            readOnly
+            elevated
+            onClose={() => setDetailEntry(undefined)}
+            onSaved={() => {}}
+          />
+        </>
       ) : (
         <DayEntrySheet
           open={selectedDate !== null && !!activeCaregiver}
           workDate={selectedDate}
           entry={selectedEntry}
           caregiverId={activeFilterId}
+          caregiverName={activeCaregiver?.display_name}
           readOnly
           onClose={() => setSelectedDate(null)}
           onSaved={() => {}}

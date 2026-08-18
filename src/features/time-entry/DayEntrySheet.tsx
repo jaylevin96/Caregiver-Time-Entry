@@ -13,6 +13,7 @@ import { db } from '@/lib/supabase';
 import {
   formatDisplayDate,
   formatHours,
+  formatHoursAsDuration,
   formatWeekEndLabel,
   getChicagoDateString,
   endOfPayrollWeek,
@@ -38,7 +39,9 @@ interface DayEntrySheetProps {
   entry: TimeEntry | undefined;
   caregiverId: string;
   actorId?: string;
+  caregiverName?: string;
   readOnly?: boolean;
+  elevated?: boolean;
   onClose: () => void;
   onSaved: () => void;
 }
@@ -97,7 +100,9 @@ export function DayEntrySheet({
   entry,
   caregiverId,
   actorId,
+  caregiverName,
   readOnly = false,
+  elevated = false,
   onClose,
   onSaved,
 }: DayEntrySheetProps) {
@@ -261,7 +266,16 @@ export function DayEntrySheet({
   );
 
   return (
-    <BottomSheet open={open} onClose={onClose} title={formatDisplayDate(workDate)}>
+    <BottomSheet
+      open={open}
+      onClose={onClose}
+      elevated={elevated}
+      title={
+        caregiverName
+          ? `${caregiverName} · ${formatDisplayDate(workDate)}`
+          : formatDisplayDate(workDate)
+      }
+    >
       <div className="space-y-5">
         {badge ? (
           <span
@@ -375,22 +389,27 @@ export function DayEntrySheet({
           <div className="space-y-3">
             {entry ? (
               <>
-                <div className="border-border bg-surface rounded-2xl border p-4">
-                  <p className="text-text-muted text-sm">Hours</p>
-                  <p className="text-3xl font-semibold tabular-nums">
-                    {formatHours(billableHours)}
-                    <span className="text-text-muted ml-1 text-xl font-normal">h</span>
+                <div>
+                  <p className="text-text-muted mb-2 text-sm font-medium">
+                    Hours worked
                   </p>
-                  {billableHours !== entry.hours ? (
-                    <p className="text-text-muted mt-1 text-sm tabular-nums">
-                      {formatHours(entry.hours)}h worked +{' '}
-                      {formatHours(billableHours - entry.hours)}h expenses
+                  <div className="border-border bg-surface rounded-2xl border p-4">
+                    <p className="text-3xl font-semibold tabular-nums">
+                      {formatHours(entry.hours)}
+                      <span className="text-text-muted ml-1 text-xl font-normal">
+                        h
+                      </span>
                     </p>
-                  ) : null}
+                    <p className="text-text-muted mt-2 text-sm">
+                      = {formatHoursAsDuration(entry.hours)}
+                    </p>
+                  </div>
                 </div>
                 {entry.notes ? (
                   <div>
-                    <p className="text-text-muted text-sm">Notes</p>
+                    <p className="text-text-muted mb-1.5 text-sm font-medium">
+                      Notes
+                    </p>
                     <p className="text-base">{entry.notes}</p>
                   </div>
                 ) : null}

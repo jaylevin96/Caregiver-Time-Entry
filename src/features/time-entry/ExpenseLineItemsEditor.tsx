@@ -1,5 +1,6 @@
 import { HoursInput } from '@/features/time-entry/HoursInput';
 import { createEmptyExpenseDraft, type ExpenseDraft } from '@/lib/utils/expenses';
+import { formatHours } from '@/lib/utils/dates';
 import { formatCurrency } from '@/lib/utils/payment-format';
 
 interface ExpenseLineItemsEditorProps {
@@ -116,20 +117,32 @@ export function ExpenseLineItemsReadOnly({ items }: ExpenseLineItemsReadOnlyProp
   if (items.length === 0) return null;
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <p className="text-text-muted text-sm font-medium">Expenses</p>
-      <ul className="space-y-2">
+      <ul className="space-y-3">
         {items.map((item, index) => (
           <li
             key={`${item.note}-${index}`}
-            className="border-border bg-surface rounded-xl border px-3 py-2 text-sm"
+            className="border-border bg-surface space-y-2 rounded-xl border p-3 text-sm"
           >
-            <div className="flex items-start justify-between gap-2">
-              <span className="font-medium">{item.note}</span>
-              <span className="shrink-0 tabular-nums">{formatCurrency(item.amount)}</span>
+            <p className="font-medium">Expense {index + 1}</p>
+            <div>
+              <p className="text-text-muted text-xs font-medium">Note</p>
+              <p className="mt-0.5">{item.note}</p>
+            </div>
+            <div>
+              <p className="text-text-muted text-xs font-medium">Amount</p>
+              <p className="mt-0.5 tabular-nums">{formatCurrency(item.amount)}</p>
             </div>
             {item.hours > 0 ? (
-              <p className="text-text-muted mt-1 tabular-nums">+{item.hours}h</p>
+              <div>
+                <p className="text-text-muted text-xs font-medium">
+                  Additional hours
+                </p>
+                <p className="mt-0.5 tabular-nums">
+                  {formatHours(item.hours)}h
+                </p>
+              </div>
             ) : null}
           </li>
         ))}
