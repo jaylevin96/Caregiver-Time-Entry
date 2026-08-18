@@ -23,7 +23,6 @@ export interface CaregiverDayPill {
   color: string;
   displayName: string;
   title: string;
-  isExpense?: boolean;
 }
 
 interface CalendarDayCellProps {
@@ -109,9 +108,8 @@ export function CalendarDayCell({
       aria-label={`${date}, ${statusAriaLabel(status, entry, readOnly)}`}
       style={isToday ? todayRingStyle : undefined}
       className={[
-        'relative flex touch-manipulation flex-col rounded-lg p-1 transition-transform active:scale-95',
+        'relative flex touch-manipulation flex-col overflow-hidden rounded-lg p-1 transition-transform active:scale-95',
         size === 'large' ? 'min-h-[5.5rem] aspect-auto' : 'aspect-square',
-        hasPills && size === 'default' ? 'min-h-[4.5rem]' : '',
         inMonth ? '' : 'opacity-35',
         status === 'paid'
           ? 'bg-success/10'
@@ -155,17 +153,14 @@ export function CalendarDayCell({
         {dayNum}
       </span>
 
-      <span className="flex flex-1 items-center justify-center overflow-hidden">
+      <span className="flex min-h-0 flex-1 items-center justify-center overflow-hidden">
         {hasPills ? (
-          <span className="flex w-full flex-col items-stretch gap-0.5 px-0.5">
+          <span className="flex w-full max-h-full flex-col items-stretch justify-center gap-px overflow-hidden px-0.5">
             {dayPills.map((pill) => (
               <span
                 key={pill.key}
                 title={pill.title}
-                className={[
-                  'truncate rounded-full px-1 py-px text-center text-[10px] font-bold leading-tight tabular-nums',
-                  pill.isExpense ? 'ring-1 ring-inset ring-black/15' : '',
-                ].join(' ')}
+                className="truncate rounded-full px-1 py-px text-center text-[10px] font-bold leading-tight tabular-nums"
                 style={{
                   backgroundColor: pill.color,
                   color: textColorForBackground(pill.color),
@@ -176,28 +171,15 @@ export function CalendarDayCell({
             ))}
           </span>
         ) : hasHours ? (
-          <span className="flex flex-col items-center leading-none">
-            <span
-              className={[
-                accentColor ? '' : 'text-accent',
-                'font-bold tabular-nums',
-                size === 'large' ? 'text-base' : 'text-sm',
-              ].join(' ')}
-              style={accentStyle}
-            >
-              {formatHours(hours)}
-            </span>
-            {hasExpense ? (
-              <span
-                className={[
-                  'mt-0.5 text-[10px] font-semibold tabular-nums',
-                  accentColor ? '' : 'text-text-muted',
-                ].join(' ')}
-                style={accentStyle}
-              >
-                {formatCompactExpense(expense)}
-              </span>
-            ) : null}
+          <span
+            className={[
+              accentColor ? '' : 'text-accent',
+              'font-bold tabular-nums leading-none',
+              size === 'large' ? 'text-base' : 'text-sm',
+            ].join(' ')}
+            style={accentStyle}
+          >
+            {formatHours(hours)}
           </span>
         ) : hasExpense ? (
           <span
@@ -234,42 +216,63 @@ export function buildDayPills(
   entries: CalendarEntry[],
   caregiversById: Map<string, { display_name: string; calendar_color: string }>,
 ): CaregiverDayPill[] {
-  const pills: CaregiverDayPill[] = [];
+  const byCaregiver = new Map<
+    string,
+    { hours: number; expense: number; color: string; displayName: string }
+  >();
 
   for (const entry of entries) {
     const caregiver = caregiversById.get(entry.caregiver_id);
-    const color = caregiver?.calendar_color ?? '#2563eb';
-    const displayName = caregiver?.display_name ?? 'Unknown';
     const hours = getDisplayHours(entry);
     const expense = getExpenseReimbursement(entry.expenses);
+    const existing = byCaregiver.get(entry.caregiver_id);
 
-    if (hours > 0) {
-      pills.push({
-        key: `${entry.id}-hours`,
-        caregiverId: entry.caregiver_id,
-        label: formatHours(hours),
-        color,
-        displayName,
-        title: `${displayName}: ${formatHoursReadable(hours)}`,
-      });
+    if (existing) {
+      existing.hours += hours;
+      existing.expense += expense;
+      continue;
     }
 
-    if (expense > 0) {
-      pills.push({
-        key: `${entry.id}-expense`,
-        caregiverId: entry.caregiver_id,
-        label: formatCompactExpense(expense),
-        color,
-        displayName,
-        title: `${displayName}: ${formatCompactExpense(expense)} reimbursement`,
-        isExpense: true,
-      });
-    }
+    byCaregiver.set(entry.caregiver_id, {
+      hours,
+      expense,
+      color: caregiver?.calendar_color ?? '#2563eb',
+      displayName: caregiver?.display_name ?? 'Unknown',
+    });
   }
 
-  return pills.sort((a, b) => {
-    const nameCompare = a.displayName.localeCompare(b.displayName);
-    if (nameCompare !== 0) return nameCompare;
-    return Number(Boolean(a.isExpense)) - Number(Boolean(b.isExpense));
-  });
+  const pills: CaregiverDayPill[] = [];
+
+  for (const [caregiverId, totals] of byCaregiver) {
+    if (totals.hours <= 0 && totals.expense <= 0) continue;
+
+    const titleParts = [`${totals.displayName}: ${formatHoursReadable(totals.hours)}`];
+    if (totals.expense > 0) {
+      titleParts.push(`${formatCompactExpense(totals.expense)} reimbursement`);
+    }
+
+    pills.push({
+      key: caregiverId,
+      caregiverId,
+      label:
+        totals.hours > 0
+          ? formatHours(totals.hours)
+          : formatCompactExpense(totals.expense),
+      color: totals.color,
+      displayName: totals.displayName,
+      title: titleParts.join(', '),
+    });
+  }
+
+  return pills.sort((a, b) => a.displayName.localeCompare(b.displayName));
+}
+
+/** Colored hours pills only when 2+ caregivers logged that day. */
+export function dayPillsForCalendar(
+  entries: CalendarEntry[] | undefined,
+  caregiversById: Map<string, { display_name: string; calendar_color: string }>,
+): CaregiverDayPill[] | undefined {
+  if (!entries?.length) return undefined;
+  const pills = buildDayPills(entries, caregiversById);
+  return pills.length >= 2 ? pills : undefined;
 }

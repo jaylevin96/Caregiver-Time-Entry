@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { InlineSpinner } from '@/components/ui/InlineSpinner';
 import {
-  buildDayPills,
+  dayPillsForCalendar,
   type CaregiverDayPill,
 } from '@/features/calendar/CalendarDayCell';
 import {
@@ -125,8 +125,8 @@ export function DaysListCalendar({
               {group.dates.map((date) => {
                 const dayPills =
                   multiEntriesByDate && caregiversById
-                    ? buildDayPills(
-                        multiEntriesByDate[date] ?? [],
+                    ? dayPillsForCalendar(
+                        multiEntriesByDate[date],
                         caregiversById,
                       )
                     : undefined;
@@ -247,10 +247,7 @@ function DayListRow({
                 <span
                   key={pill.key}
                   title={pill.title}
-                  className={[
-                    'rounded-full px-2 py-0.5 text-xs font-bold tabular-nums',
-                    pill.isExpense ? 'ring-1 ring-inset ring-black/15' : '',
-                  ].join(' ')}
+                  className="rounded-full px-2 py-0.5 text-xs font-bold tabular-nums"
                   style={{
                     backgroundColor: pill.color,
                     color: textColorForBackground(pill.color),

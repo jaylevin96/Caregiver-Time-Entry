@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildDayPills } from '@/features/calendar/CalendarDayCell';
+import { buildDayPills, dayPillsForCalendar } from '@/features/calendar/CalendarDayCell';
 import {
   aggregateEntriesByDate,
   groupEntriesByDate,
@@ -167,7 +167,7 @@ describe('merge b762032: buildDayPills (line items + main pills UI)', () => {
     ['bob', { display_name: 'Bob', calendar_color: '#2563eb' }],
   ]);
 
-  it('shows billable hours and separate $ reimbursement pill (not worked-only)', () => {
+  it('totals billable hours per caregiver and keeps expense on the title, not a second pill', () => {
     const entry = toCalendarEntry(
       makeEntry({
         id: 'e1',
@@ -181,18 +181,13 @@ describe('merge b762032: buildDayPills (line items + main pills UI)', () => {
     );
 
     const pills = buildDayPills([entry], caregiversById);
-    expect(pills).toHaveLength(2);
-
-    const hoursPill = pills.find((pill) => !pill.isExpense);
-    const expensePill = pills.find((pill) => pill.isExpense);
-
-    expect(hoursPill?.label).toBe('4');
-    expect(hoursPill?.color).toBe('#dc2626');
-    expect(expensePill?.label).toBe('$40');
-    expect(expensePill?.isExpense).toBe(true);
+    expect(pills).toHaveLength(1);
+    expect(pills[0]?.label).toBe('4');
+    expect(pills[0]?.color).toBe('#dc2626');
+    expect(pills[0]?.title).toContain('$40');
   });
 
-  it('renders multi-caregiver pills with colors and sorts hours before expense', () => {
+  it('renders one hours pill per caregiver and sorts by name', () => {
     const entries = [
       toCalendarEntry(
         makeEntry({
@@ -216,14 +211,117 @@ describe('merge b762032: buildDayPills (line items + main pills UI)', () => {
     ];
 
     const pills = buildDayPills(entries, caregiversById);
-    // Alice hours, Alice $, Bob hours — sorted by display name then hours before expense
-    expect(pills.map((pill) => pill.key)).toEqual([
-      'e-alice-hours',
-      'e-alice-expense',
-      'e-bob-hours',
-    ]);
+    expect(pills.map((pill) => pill.key)).toEqual(['alice', 'bob']);
+    expect(pills[0]?.label).toBe('3');
     expect(pills[0]?.color).toBe('#dc2626');
-    expect(pills[2]?.color).toBe('#2563eb');
+    expect(pills[1]?.label).toBe('2');
+    expect(pills[1]?.color).toBe('#2563eb');
+  });
+
+  it('dayPillsForCalendar is empty when only one caregiver logged time', () => {
+    const entry = toCalendarEntry(
+      makeEntry({
+        id: 'e1',
+        caregiver_id: 'alice',
+        work_date: '2026-08-04',
+        hours: 6,
+        time_entry_expenses: [
+          makeExpense({ id: 'x1', time_entry_id: 'e1', amount: 12 }),
+        ],
+      }),
+    );
+
+    expect(dayPillsForCalendar([entry], caregiversById)).toBeUndefined();
+  });
+
+  it('dayPillsForCalendar is empty when one caregiver has multiple entries that day', () => {
+    const pills = dayPillsForCalendar(
+      [
+        toCalendarEntry(
+          makeEntry({
+            id: 'e-hours',
+            caregiver_id: 'alice',
+            work_date: '2026-08-04',
+            hours: 3,
+          }),
+        ),
+        toCalendarEntry(
+          makeEntry({
+            id: 'e-expense',
+            caregiver_id: 'alice',
+            work_date: '2026-08-04',
+            hours: 0,
+            time_entry_expenses: [
+              makeExpense({ id: 'x1', time_entry_id: 'e-expense', amount: 25 }),
+            ],
+          }),
+        ),
+      ],
+      caregiversById,
+    );
+
+    expect(pills).toBeUndefined();
+    expect(
+      buildDayPills(
+        [
+          toCalendarEntry(
+            makeEntry({
+              id: 'e-hours',
+              caregiver_id: 'alice',
+              work_date: '2026-08-04',
+              hours: 3,
+            }),
+          ),
+          toCalendarEntry(
+            makeEntry({
+              id: 'e-expense',
+              caregiver_id: 'alice',
+              work_date: '2026-08-04',
+              hours: 0,
+              time_entry_expenses: [
+                makeExpense({ id: 'x1', time_entry_id: 'e-expense', amount: 25 }),
+              ],
+            }),
+          ),
+        ],
+        caregiversById,
+      ),
+    ).toEqual([
+      expect.objectContaining({
+        key: 'alice',
+        label: '3',
+        title: expect.stringContaining('$25'),
+      }),
+    ]);
+  });
+
+  it('dayPillsForCalendar shows hours pills when two caregivers logged time', () => {
+    const pills = dayPillsForCalendar(
+      [
+        toCalendarEntry(
+          makeEntry({
+            id: 'e-alice',
+            caregiver_id: 'alice',
+            work_date: '2026-08-04',
+            hours: 2,
+            time_entry_expenses: [
+              makeExpense({ id: 'x1', time_entry_id: 'e-alice', amount: 12.5 }),
+            ],
+          }),
+        ),
+        toCalendarEntry(
+          makeEntry({
+            id: 'e-bob',
+            caregiver_id: 'bob',
+            work_date: '2026-08-04',
+            hours: 1.5,
+          }),
+        ),
+      ],
+      caregiversById,
+    );
+
+    expect(pills?.map((pill) => pill.label)).toEqual(['2', '1.5']);
   });
 });
 

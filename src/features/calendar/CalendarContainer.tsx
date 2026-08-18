@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { ALL_CAREGIVERS_ID } from '@/features/admin/CaregiverFilter';
 import { CalendarSummaryBar } from '@/features/calendar/CalendarSummaryBar';
 import {
-  buildDayPills,
+  dayPillsForCalendar,
   type CaregiverDayPill,
 } from '@/features/calendar/CalendarDayCell';
 import { CalendarViewSwitcher } from '@/features/calendar/CalendarViewSwitcher';
@@ -119,9 +119,7 @@ export function CalendarContainer({
 
   function getDayPills(date: string): CaregiverDayPill[] | undefined {
     if (!showMultiPills) return undefined;
-    const entries = multiEntriesByDate[date];
-    if (!entries?.length) return undefined;
-    return buildDayPills(entries, caregiversById);
+    return dayPillsForCalendar(multiEntriesByDate[date], caregiversById);
   }
 
   function handleSelectDate(date: string) {
