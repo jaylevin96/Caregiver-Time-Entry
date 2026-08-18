@@ -45,11 +45,16 @@ describe('caregiver lists after deactivate / role change', () => {
     ]);
   });
 
-  it('keeps deactivated caregivers on the Pay list so remaining hours can be paid', () => {
+  it('hides deactivated caregivers once they have no unpaid entries', () => {
     expect(getPayCaregivers([alice, bobInactive, admin]).map((p) => p.id)).toEqual([
       'alice',
-      'bob',
     ]);
+  });
+
+  it('keeps deactivated caregivers on the Pay list while they still have unpaid hours', () => {
+    expect(
+      getPayCaregivers([alice, bobInactive, admin], ['bob']).map((p) => p.id),
+    ).toEqual(['bob', 'alice']);
   });
 
   it('includes promoted admins who still have unpaid entries', () => {

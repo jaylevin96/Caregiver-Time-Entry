@@ -12,9 +12,9 @@ export function getActiveCaregivers(profiles: Profile[]): Profile[] {
 }
 
 /**
- * People the Pay tab must still be able to select: current caregivers
- * (including deactivated) and anyone with unpaid time entries.
- * Unpaid caregivers are listed first.
+ * People the Pay tab should list: active caregivers, plus anyone who still
+ * has unpaid time entries (deactivated caregivers or promoted admins).
+ * Unpaid people are listed first.
  */
 export function getPayCaregivers(
   profiles: Profile[],
@@ -23,7 +23,7 @@ export function getPayCaregivers(
   const unpaid = new Set(unpaidCaregiverIds);
 
   return profiles
-    .filter((profile) => profile.role === 'caregiver' || unpaid.has(profile.id))
+    .filter((profile) => isActiveCaregiver(profile) || unpaid.has(profile.id))
     .sort((a, b) => {
       const unpaidDelta = Number(unpaid.has(b.id)) - Number(unpaid.has(a.id));
       if (unpaidDelta !== 0) return unpaidDelta;
