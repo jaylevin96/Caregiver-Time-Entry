@@ -169,21 +169,15 @@ export function AdminPayPage() {
 
   const hoursSummaryText = useMemo(() => {
     if (activeEntries.length === 0) return '';
-    return buildPaymentSummaryText(
-      activeEntries,
-      lastPayment?.total_hours ?? totalHours,
-      activeExpensesByEntryId,
-    );
-  }, [activeEntries, activeExpensesByEntryId, lastPayment, totalHours]);
+    return buildPaymentSummaryText(activeEntries, activeExpensesByEntryId);
+  }, [activeEntries, activeExpensesByEntryId]);
 
   const reimbursementSummaryText = useMemo(() => {
-    const reimbursementTotal =
-      lastPayment?.total_reimbursement ?? totalReimbursement;
     return buildReimbursementSummaryText(
+      activeEntries,
       activeExpensesByEntryId,
-      reimbursementTotal,
     );
-  }, [activeExpensesByEntryId, lastPayment, totalReimbursement]);
+  }, [activeEntries, activeExpensesByEntryId]);
 
   async function handleMarkPaid() {
     if (!activeCaregiverId || !periodStart || !periodEnd || entries.length === 0) {

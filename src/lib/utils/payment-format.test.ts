@@ -5,6 +5,8 @@ import {
   calculatePaymentTotal,
   formatCurrency,
   formatEntryHoursLine,
+  formatPayDate,
+  formatPayHours,
   formatPayPeriodRange,
   formatShortDate,
 } from '@/lib/utils/payment-format';
@@ -49,6 +51,25 @@ describe('pay period formatting', () => {
     );
   });
 
+  it('formats pay dates with ordinals', () => {
+    expect(formatPayDate('2026-08-01')).toBe('August 1st');
+    expect(formatPayDate('2026-08-02')).toBe('August 2nd');
+    expect(formatPayDate('2026-08-03')).toBe('August 3rd');
+    expect(formatPayDate('2026-08-11')).toBe('August 11th');
+    expect(formatPayDate('2026-08-17')).toBe('August 17th');
+    expect(formatPayDate('2026-08-21')).toBe('August 21st');
+    expect(formatPayDate('2026-08-22')).toBe('August 22nd');
+    expect(formatPayDate('2026-08-23')).toBe('August 23rd');
+  });
+
+  it('formats combined pay hours as hours and min', () => {
+    expect(formatPayHours(6.5)).toBe('6 hours 30 min');
+    expect(formatPayHours(1)).toBe('1 hour');
+    expect(formatPayHours(6)).toBe('6 hours');
+    expect(formatPayHours(0.25)).toBe('15 min');
+    expect(formatPayHours(1.25)).toBe('1 hour 15 min');
+  });
+
   it('formats currency without forcing cents for whole dollars', () => {
     expect(formatCurrency(100)).toBe('$100');
     expect(formatCurrency(12.5)).toBe('$12.5');
@@ -56,28 +77,31 @@ describe('pay period formatting', () => {
 });
 
 describe('payment copy and totals (local expense line-item model)', () => {
-  it('shows worked + expense hours on entry lines', () => {
-    const line = formatEntryHoursLine(entry({ id: 'e1', work_date: '2026-07-01', hours: 3 }), [
-      expense({ time_entry_id: 'e1', hours: 1, amount: 40 }),
+  it('combines worked and expense hours on each day line', () => {
+    const line = formatEntryHoursLine(entry({ id: 'e1', work_date: '2026-08-17', hours: 5.5 }), [
+      expense({ time_entry_id: 'e1', hours: 1, amount: 250 }),
     ]);
-    expect(line).toContain('3 h worked + 1 h expenses');
+    expect(line).toBe('August 17th: 6 hours 30 min');
   });
 
   it('builds hours and reimbursement copy separately', () => {
-    const entries = [entry({ id: 'e1', work_date: '2026-07-01', hours: 3 })];
+    const entries = [entry({ id: 'e1', work_date: '2026-08-17', hours: 5.5 })];
     const expensesByEntryId = {
-      e1: [expense({ time_entry_id: 'e1', hours: 1, amount: 40, note: 'Parking' })],
+      e1: [
+        expense({ time_entry_id: 'e1', hours: 1, amount: 200, note: 'Parking' }),
+        expense({ time_entry_id: 'e1', hours: 0, amount: 50, note: 'Groceries' }),
+      ],
     };
 
-    const hoursText = buildPaymentSummaryText(entries, 4, expensesByEntryId);
-    expect(hoursText).toContain('4 hours');
-    expect(hoursText).toContain('worked + 1 h expenses');
+    const hoursText = buildPaymentSummaryText(entries, expensesByEntryId);
+    expect(hoursText).toBe('August 17th: 6 hours 30 min');
 
-    const reimbursementText = buildReimbursementSummaryText(expensesByEntryId, 40);
-    expect(reimbursementText).toContain('Reimbursement');
-    expect(reimbursementText).toContain('Parking:');
-    expect(reimbursementText.trim().endsWith('$40')).toBe(true);
-    expect(buildReimbursementSummaryText({}, 0)).toBe('');
+    const reimbursementText = buildReimbursementSummaryText(
+      entries,
+      expensesByEntryId,
+    );
+    expect(reimbursementText).toBe('Reimbursement\nAugust 17th: 250');
+    expect(buildReimbursementSummaryText([], {})).toBe('');
   });
 
   it('calculates hours pay excluding reimbursement amounts', () => {
