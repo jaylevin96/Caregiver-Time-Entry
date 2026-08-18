@@ -64,10 +64,9 @@ export function getExpenseReimbursement(
   return expenses?.reduce((sum, expense) => sum + Number(expense.amount), 0) ?? 0;
 }
 
-/** Compact expense label for calendar cells, e.g. "$25". */
+/** Compact expense label for calendar cells, e.g. "$25.00". */
 export function formatCompactExpense(amount: number): string {
-  if (Number.isInteger(amount)) return `$${amount}`;
-  return `$${amount.toFixed(2)}`;
+  return `$${Number(amount).toFixed(2)}`;
 }
 
 export function getBillableHours(

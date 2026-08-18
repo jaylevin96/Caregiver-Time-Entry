@@ -64,9 +64,10 @@ describe('expense totals', () => {
     ).toBe(8);
   });
 
-  it('formats compact expense labels', () => {
-    expect(formatCompactExpense(25)).toBe('$25');
+  it('formats compact expense labels with cents', () => {
+    expect(formatCompactExpense(25)).toBe('$25.00');
     expect(formatCompactExpense(12.5)).toBe('$12.50');
+    expect(formatCompactExpense(22.4)).toBe('$22.40');
   });
 });
 

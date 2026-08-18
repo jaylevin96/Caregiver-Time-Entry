@@ -64,7 +64,7 @@ export function formatPayHours(hours: number): string {
 }
 
 function formatReimbursementAmount(amount: number): string {
-  return String(Math.round(Number(amount) * 100) / 100);
+  return (Math.round(Number(amount) * 100) / 100).toFixed(2);
 }
 
 /** Pay period range, e.g. "July 1 – 7, 2026" or "June 28 – July 4, 2026". */
@@ -89,7 +89,7 @@ export function formatCurrency(amount: number): string {
   return amount.toLocaleString('en-US', {
     style: 'currency',
     currency: 'USD',
-    minimumFractionDigits: 0,
+    minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
 }

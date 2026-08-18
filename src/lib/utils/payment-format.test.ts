@@ -70,9 +70,10 @@ describe('pay period formatting', () => {
     expect(formatPayHours(1.25)).toBe('1 hour 15 min');
   });
 
-  it('formats currency without forcing cents for whole dollars', () => {
-    expect(formatCurrency(100)).toBe('$100');
-    expect(formatCurrency(12.5)).toBe('$12.5');
+  it('formats currency with cents', () => {
+    expect(formatCurrency(100)).toBe('$100.00');
+    expect(formatCurrency(12.5)).toBe('$12.50');
+    expect(formatCurrency(22.4)).toBe('$22.40');
   });
 });
 
@@ -100,7 +101,7 @@ describe('payment copy and totals (local expense line-item model)', () => {
       entries,
       expensesByEntryId,
     );
-    expect(reimbursementText).toBe('Reimbursement\nAugust 17th: 250');
+    expect(reimbursementText).toBe('Reimbursement\nAugust 17th: 250.00');
     expect(buildReimbursementSummaryText([], {})).toBe('');
   });
 
