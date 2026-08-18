@@ -21,7 +21,12 @@ import { formatHours, getChicagoDateString } from '@/lib/utils/dates';
 import type { CaregiverRate, Payment, TimeEntry, TimeEntryExpense } from '@/types/database';
 
 export function AdminPayPage() {
-  const { caregivers, loading: caregiversLoading } = useCaregivers();
+  const {
+    payCaregivers: caregivers,
+    loading: caregiversLoading,
+    error: caregiversError,
+    refresh: refreshCaregivers,
+  } = useCaregivers();
   const { defaultRate } = useDefaultHourlyRate();
   const [selectedCaregiverId, setSelectedCaregiverId] = useState<string | null>(
     null,
@@ -81,38 +86,49 @@ export function AdminPayPage() {
         .order('effective_from', { ascending: false }),
     ]);
 
+    if (ratesResult.error) {
+      setError(ratesResult.error.message);
+      setEntries([]);
+      setExpensesByEntryId({});
+      setRates([]);
+      setLoading(false);
+      return;
+    }
+
+    setRates(ratesResult.data ?? []);
+
     if (entriesResult.error) {
       setError(entriesResult.error.message);
       setEntries([]);
       setExpensesByEntryId({});
-    } else {
-      const loadedEntries = entriesResult.data ?? [];
-      setEntries(loadedEntries);
-
-      if (loadedEntries.length === 0) {
-        setExpensesByEntryId({});
-      } else {
-        const entryIds = loadedEntries.map((entry) => entry.id);
-        const { data: expenses, error: expensesError } = await db
-          .from('time_entry_expenses')
-          .select('*')
-          .in('time_entry_id', entryIds)
-          .order('created_at');
-
-        if (expensesError) {
-          setError(
-            `Could not load expenses: ${expensesError.message}. Totals may be incomplete.`,
-          );
-          setEntries([]);
-          setExpensesByEntryId({});
-        } else {
-          setExpensesByEntryId(groupExpensesByEntryId(expenses ?? []));
-        }
-      }
+      setLoading(false);
+      return;
     }
 
-    if (!ratesResult.error) {
-      setRates(ratesResult.data ?? []);
+    const loadedEntries = entriesResult.data ?? [];
+    setEntries(loadedEntries);
+
+    if (loadedEntries.length === 0) {
+      setExpensesByEntryId({});
+      setLoading(false);
+      return;
+    }
+
+    const entryIds = loadedEntries.map((entry) => entry.id);
+    const { data: expenses, error: expensesError } = await db
+      .from('time_entry_expenses')
+      .select('*')
+      .in('time_entry_id', entryIds)
+      .order('created_at');
+
+    if (expensesError) {
+      setError(
+        `Could not load expenses: ${expensesError.message}. Totals may be incomplete.`,
+      );
+      setEntries([]);
+      setExpensesByEntryId({});
+    } else {
+      setExpensesByEntryId(groupExpensesByEntryId(expenses ?? []));
     }
 
     setLoading(false);
@@ -223,6 +239,10 @@ export function AdminPayPage() {
       {caregiversLoading ? (
         <div className="flex justify-center py-12">
           <InlineSpinner />
+        </div>
+      ) : caregiversError ? (
+        <div className="px-3 py-3 sm:px-4 sm:py-4">
+          <ErrorBanner message={caregiversError} onRetry={refreshCaregivers} />
         </div>
       ) : caregivers.length === 0 ? (
         <EmptyState

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   createEmptyExpenseDraft,
+  expenseDraftsToRows,
   expenseToDraft,
   formatCompactExpense,
   getBillableHours,
@@ -43,6 +44,7 @@ describe('expense totals', () => {
   it('computes billable hours as worked + expense hours', () => {
     expect(getBillableHours({ hours: 3 }, [{ hours: 1 }])).toBe(4);
     expect(getBillableHours({ hours: 3 }, [])).toBe(3);
+    expect(getBillableHours({ hours: '3' as unknown as number }, [{ hours: '1' as unknown as number }])).toBe(4);
   });
 
   it('does not double-count expenses on aggregate entries', () => {
@@ -53,6 +55,13 @@ describe('expense totals', () => {
     };
     expect(getDisplayHours(aggregate)).toBe(8);
     expect(getDisplayHours({ hours: 3, expenses: [{ hours: 1 }] })).toBe(4);
+    expect(
+      getDisplayHours({
+        hours: '8' as unknown as number,
+        expenses: [{ hours: 2 }],
+        _aggregate: { entryCount: 2, paidCount: 0 },
+      }),
+    ).toBe(8);
   });
 
   it('formats compact expense labels', () => {
@@ -73,11 +82,9 @@ describe('draft mapping and grouping', () => {
   });
 
   it('maps rows to drafts and creates empty drafts', () => {
-    expect(createEmptyExpenseDraft()).toEqual({
-      hours: 0,
-      note: '',
-      amount: '',
-    });
+    const empty = createEmptyExpenseDraft();
+    expect(empty).toMatchObject({ hours: 0, note: '', amount: '' });
+    expect(empty.id).toEqual(expect.any(String));
     expect(
       expenseToDraft(expense({ id: 'x', time_entry_id: 'e1', hours: 0.5, amount: 9 })),
     ).toEqual({
@@ -86,6 +93,24 @@ describe('draft mapping and grouping', () => {
       note: 'Parking',
       amount: '9',
     });
+  });
+
+  it('maps drafts to upsert rows without dropping existing ids', () => {
+    const rows = expenseDraftsToRows('e1', [
+      { id: 'keep-me', hours: 0.5, note: ' Gas ', amount: '$7.1' },
+      { hours: 0, note: 'Parking', amount: '4' },
+    ]);
+
+    expect(rows[0]).toEqual({
+      id: 'keep-me',
+      time_entry_id: 'e1',
+      hours: 0.5,
+      note: 'Gas',
+      amount: 7.1,
+    });
+    expect(rows[1]?.id).toEqual(expect.any(String));
+    expect(rows[1]?.time_entry_id).toBe('e1');
+    expect(rows[1]?.amount).toBe(4);
   });
 });
 

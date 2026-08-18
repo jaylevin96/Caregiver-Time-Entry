@@ -19,9 +19,9 @@ import {
   isValidQuarterHours,
 } from '@/lib/utils/dates';
 import {
+  expenseDraftsToRows,
   expenseToDraft,
   getBillableHours,
-  parseExpenseAmount,
   validateExpenseDrafts,
   type ExpenseDraft,
 } from '@/lib/utils/expenses';
@@ -58,25 +58,36 @@ async function saveExpenses(
   timeEntryId: string,
   drafts: ExpenseDraft[],
 ): Promise<string | null> {
-  const { error: deleteError } = await db
+  const rows = expenseDraftsToRows(timeEntryId, drafts);
+
+  if (rows.length > 0) {
+    const { error: upsertError } = await db
+      .from('time_entry_expenses')
+      .upsert(rows, { onConflict: 'id' });
+
+    if (upsertError) {
+      return `Hours saved, but expenses could not be saved (${upsertError.message}). Try save again — existing expenses were not removed.`;
+    }
+  }
+
+  let deleteQuery = db
     .from('time_entry_expenses')
     .delete()
     .eq('time_entry_id', timeEntryId);
 
-  if (deleteError) return deleteError.message;
-  if (drafts.length === 0) return null;
-
-  const rows = drafts.map((draft) => ({
-    time_entry_id: timeEntryId,
-    hours: draft.hours,
-    note: draft.note.trim(),
-    amount: parseExpenseAmount(draft.amount) ?? 0,
-  }));
-
-  const { error: insertError } = await db.from('time_entry_expenses').insert(rows);
-  if (insertError) {
-    return `Hours saved, but expenses could not be saved (${insertError.message}). Re-enter expenses and save again.`;
+  if (rows.length > 0) {
+    deleteQuery = deleteQuery.not(
+      'id',
+      'in',
+      `(${rows.map((row) => row.id).join(',')})`,
+    );
   }
+
+  const { error: deleteError } = await deleteQuery;
+  if (deleteError) {
+    return `Hours saved, but removed expenses could not be cleared (${deleteError.message}). Try save again.`;
+  }
+
   return null;
 }
 

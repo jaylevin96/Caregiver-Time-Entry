@@ -67,6 +67,7 @@ export function CaregiverFilter({
                 />
               ) : null}
               {caregiver.display_name}
+              {!caregiver.is_active ? ' (inactive)' : ''}
             </button>
           );
         })}

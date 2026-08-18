@@ -95,7 +95,7 @@ export function CalendarContainer({
       case 'week':
         return getWeekDates(weekStart);
       case 'days':
-        return generateDateRange(addDays(today, -60), today);
+        return generateDateRange(addDays(today, -60), endOfPayrollWeek(today));
     }
   }, [view, year, month, weekStart, today]);
 

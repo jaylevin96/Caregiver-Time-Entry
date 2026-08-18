@@ -83,7 +83,7 @@ export interface Database {
         Insert: Omit<
           TimeEntryExpense,
           'id' | 'created_at' | 'updated_at' | 'payment_id'
-        > & { payment_id?: string | null };
+        > & { id?: string; payment_id?: string | null };
         Update: Partial<
           Omit<TimeEntryExpense, 'id' | 'time_entry_id' | 'created_at'>
         >;

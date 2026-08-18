@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { BottomSheet } from '@/components/ui/BottomSheet';
+import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { InlineSpinner } from '@/components/ui/InlineSpinner';
 import { db } from '@/lib/supabase';
 import { formatDisplayDate, formatHours } from '@/lib/utils/dates';
@@ -28,10 +29,12 @@ export function AdminAllDaySheet({
     (TimeEntry & { time_entry_expenses?: TimeEntryExpense[] })[]
   >([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open || !workDate) {
       setEntries([]);
+      setError(null);
       return;
     }
 
@@ -39,8 +42,9 @@ export function AdminAllDaySheet({
 
     async function load() {
       setLoading(true);
+      setError(null);
 
-      const { data, error } = await db
+      const { data, error: fetchError } = await db
         .from('time_entries')
         .select('*, time_entry_expenses(*)')
         .eq('work_date', workDate)
@@ -48,8 +52,9 @@ export function AdminAllDaySheet({
 
       if (cancelled) return;
 
-      if (error) {
+      if (fetchError) {
         setEntries([]);
+        setError(fetchError.message);
       } else {
         setEntries(data ?? []);
       }
@@ -87,6 +92,8 @@ export function AdminAllDaySheet({
         <div className="flex justify-center py-8">
           <InlineSpinner />
         </div>
+      ) : error ? (
+        <ErrorBanner message={error} />
       ) : entries.length === 0 ? (
         <p className="text-text-muted py-4 text-center text-sm">
           No hours logged for this day.

@@ -9,7 +9,26 @@ export interface ExpenseDraft {
 }
 
 export function createEmptyExpenseDraft(): ExpenseDraft {
-  return { hours: 0, note: '', amount: '' };
+  return { id: crypto.randomUUID(), hours: 0, note: '', amount: '' };
+}
+
+export function expenseDraftsToRows(
+  timeEntryId: string,
+  drafts: ExpenseDraft[],
+): Array<{
+  id: string;
+  time_entry_id: string;
+  hours: number;
+  note: string;
+  amount: number;
+}> {
+  return drafts.map((draft) => ({
+    id: draft.id ?? crypto.randomUUID(),
+    time_entry_id: timeEntryId,
+    hours: draft.hours,
+    note: draft.note.trim(),
+    amount: parseExpenseAmount(draft.amount) ?? 0,
+  }));
 }
 
 export function groupExpensesByEntryId(
@@ -36,13 +55,13 @@ export function expenseToDraft(expense: TimeEntryExpense): ExpenseDraft {
 }
 
 export function getExpenseHours(expenses: { hours: number }[] | null | undefined): number {
-  return expenses?.reduce((sum, expense) => sum + expense.hours, 0) ?? 0;
+  return expenses?.reduce((sum, expense) => sum + Number(expense.hours), 0) ?? 0;
 }
 
 export function getExpenseReimbursement(
   expenses: { amount: number }[] | null | undefined,
 ): number {
-  return expenses?.reduce((sum, expense) => sum + expense.amount, 0) ?? 0;
+  return expenses?.reduce((sum, expense) => sum + Number(expense.amount), 0) ?? 0;
 }
 
 /** Compact expense label for calendar cells, e.g. "$25". */
@@ -55,7 +74,7 @@ export function getBillableHours(
   entry: { hours: number },
   expenses?: { hours: number }[] | null,
 ): number {
-  return entry.hours + getExpenseHours(expenses);
+  return Number(entry.hours) + getExpenseHours(expenses);
 }
 
 export function getDisplayHours(entry: {
@@ -63,7 +82,7 @@ export function getDisplayHours(entry: {
   expenses?: { hours: number }[] | null;
   _aggregate?: unknown;
 }): number {
-  if (entry._aggregate) return entry.hours;
+  if (entry._aggregate) return Number(entry.hours);
   return getBillableHours(entry, entry.expenses);
 }
 

@@ -5,7 +5,7 @@ import {
   groupEntriesByDate,
   toCalendarEntry,
   type EntryWithExpenses,
-} from '@/features/calendar/useDateRangeEntries';
+} from '@/features/calendar/entry-aggregates';
 import { getDisplayHours, getExpenseReimbursement } from '@/lib/utils/expenses';
 import { getDayEntryStatus } from '@/lib/utils/entry-status';
 import { calculatePaymentTotal } from '@/lib/utils/payment-format';

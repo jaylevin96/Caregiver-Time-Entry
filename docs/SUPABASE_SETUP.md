@@ -55,6 +55,14 @@ Run `supabase/migrations/004_no_future_week_entries.sql` in the SQL Editor.
 
 Caregivers cannot log hours for dates after the current Mon–Sun week (enforced in RLS and the app).
 
+## 6b. Later migrations (expenses, deactivate, inactive profile)
+
+Run these in order in the SQL Editor if they are not applied yet:
+
+- `005_expense_line_items.sql` — expense reimbursements
+- `006_deactivate_user.sql` — admin deactivate
+- `007_inactive_profile_select.sql` — deactivated users can load their own profile so the app shows **Account inactive**
+
 ## 7. Bootstrap admin (your existing user)
 
 Use **your** Supabase auth account as the first admin while building. Your dad can get his own admin account later (same steps — `role = 'admin'`).

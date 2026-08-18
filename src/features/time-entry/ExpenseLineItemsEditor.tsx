@@ -1,5 +1,5 @@
 import { HoursInput } from '@/features/time-entry/HoursInput';
-import type { ExpenseDraft } from '@/lib/utils/expenses';
+import { createEmptyExpenseDraft, type ExpenseDraft } from '@/lib/utils/expenses';
 import { formatCurrency } from '@/lib/utils/payment-format';
 
 interface ExpenseLineItemsEditorProps {
@@ -22,7 +22,7 @@ export function ExpenseLineItemsEditor({
   }
 
   function addItem() {
-    onChange([...items, { hours: 0, note: '', amount: '' }]);
+    onChange([...items, createEmptyExpenseDraft()]);
   }
 
   return (
