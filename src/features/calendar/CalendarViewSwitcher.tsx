@@ -37,7 +37,7 @@ export function CalendarViewSwitcher({
             aria-selected={selected}
             onClick={() => handleChange(view.id)}
             className={[
-              'min-h-10 flex-1 rounded-lg text-sm font-medium transition-colors',
+              'min-h-11 flex-1 rounded-lg text-sm font-medium transition-colors',
               selected
                 ? 'bg-surface-raised text-text shadow-sm'
                 : 'text-text-muted',
@@ -51,11 +51,11 @@ export function CalendarViewSwitcher({
   );
 
   if (embedded) {
-    return <div className="px-3 pt-3 pb-1 sm:px-4">{tabs}</div>;
+    return <div className="px-2 pt-3 pb-1 sm:px-4">{tabs}</div>;
   }
 
   return (
-    <div className="bg-surface/95 supports-[backdrop-filter]:bg-surface/80 sticky top-[var(--app-header-height,calc(env(safe-area-inset-top)+4.5rem))] z-[9] px-3 pt-3 pb-1 backdrop-blur sm:px-4">
+    <div className="bg-surface/95 supports-[backdrop-filter]:bg-surface/80 sticky top-[var(--app-header-height,calc(env(safe-area-inset-top)+4.5rem))] z-[9] px-2 pt-3 pb-1 backdrop-blur sm:px-4">
       {tabs}
     </div>
   );

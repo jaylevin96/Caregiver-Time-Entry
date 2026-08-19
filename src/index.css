@@ -18,15 +18,26 @@
   html {
     @apply antialiased;
     -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   body {
     @apply bg-surface text-text font-sans min-h-dvh;
     overscroll-behavior-y: none;
+    overflow-x: clip;
   }
 
   #root {
     @apply min-h-dvh;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    touch-action: manipulation;
   }
 
   input[type='date'] {
@@ -37,7 +48,7 @@
 
 @layer components {
   .date-input-compact {
-    @apply bg-surface-raised focus:border-accent focus:ring-accent/20 block w-full min-w-0 max-w-full rounded-md border border-transparent px-0 py-0.5 text-xs outline-none focus:border-transparent focus:ring-0;
+    @apply bg-surface-raised focus:border-accent focus:ring-accent/20 block w-full min-h-11 min-w-0 max-w-full rounded-md border border-transparent px-0 py-1 text-base outline-none focus:border-transparent focus:ring-0;
     box-sizing: border-box;
     appearance: none;
     -webkit-appearance: none;

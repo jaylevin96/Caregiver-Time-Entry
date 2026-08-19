@@ -39,7 +39,7 @@ export function SignUpPage() {
 
   if (confirmationSent) {
     return (
-      <div className="flex min-h-dvh flex-col justify-center px-6 py-12">
+      <div className="flex min-h-dvh flex-col justify-center px-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] pt-[max(3rem,env(safe-area-inset-top))] pb-[max(3rem,env(safe-area-inset-bottom))]">
         <div className="mx-auto w-full max-w-sm text-center">
           <h1 className="text-2xl font-semibold tracking-tight">Check your email</h1>
           <p className="text-text-muted mt-3 text-sm">
@@ -58,7 +58,7 @@ export function SignUpPage() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col justify-center px-6 py-12">
+    <div className="flex min-h-dvh flex-col justify-center px-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] pt-[max(3rem,env(safe-area-inset-top))] pb-[max(3rem,env(safe-area-inset-bottom))]">
       <div className="mx-auto w-full max-w-sm">
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-semibold tracking-tight">Create account</h1>

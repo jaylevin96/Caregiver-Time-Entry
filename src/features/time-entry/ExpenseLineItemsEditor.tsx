@@ -34,7 +34,7 @@ export function ExpenseLineItemsEditor({
           type="button"
           disabled={disabled}
           onClick={addItem}
-          className="text-accent text-sm font-medium disabled:opacity-50"
+          className="text-accent inline-flex min-h-11 items-center text-sm font-medium disabled:opacity-50"
         >
           + Add expense
         </button>
@@ -58,7 +58,7 @@ export function ExpenseLineItemsEditor({
               type="button"
               disabled={disabled}
               onClick={() => removeItem(index)}
-              className="text-danger text-sm disabled:opacity-50"
+              className="text-danger inline-flex min-h-11 items-center text-sm disabled:opacity-50"
             >
               Remove
             </button>

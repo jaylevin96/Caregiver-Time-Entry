@@ -46,7 +46,7 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col justify-center px-6 py-12">
+    <div className="flex min-h-dvh flex-col justify-center px-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] pt-[max(3rem,env(safe-area-inset-top))] pb-[max(3rem,env(safe-area-inset-bottom))]">
       <div className="mx-auto w-full max-w-sm">
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-semibold tracking-tight">Time Tracker</h1>

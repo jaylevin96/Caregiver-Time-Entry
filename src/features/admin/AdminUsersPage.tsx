@@ -250,7 +250,7 @@ export function AdminUsersPage() {
                     {user.role === 'caregiver' ? (
                       <Button
                         variant="secondary"
-                        className="min-h-10 flex-1 text-sm"
+                        className="min-h-11 flex-1 text-sm"
                         disabled={isBusy}
                         onClick={() => handleRoleChange(user, 'admin')}
                       >
@@ -259,7 +259,7 @@ export function AdminUsersPage() {
                     ) : (
                       <Button
                         variant="secondary"
-                        className="min-h-10 flex-1 text-sm"
+                        className="min-h-11 flex-1 text-sm"
                         disabled={isBusy || isSelf}
                         onClick={() => handleRoleChange(user, 'caregiver')}
                       >
@@ -282,7 +282,7 @@ export function AdminUsersPage() {
                         <Button
                           fullWidth
                           variant="danger"
-                          className="min-h-10 text-sm"
+                          className="min-h-11 text-sm"
                           disabled={isBusy}
                           onClick={() => handleDeactivate(user)}
                         >
@@ -291,7 +291,7 @@ export function AdminUsersPage() {
                         <Button
                           fullWidth
                           variant="secondary"
-                          className="min-h-10 text-sm"
+                          className="min-h-11 text-sm"
                           disabled={isBusy}
                           onClick={() => setConfirmDeactivateId(null)}
                         >
@@ -302,7 +302,7 @@ export function AdminUsersPage() {
                   ) : !isSelf ? (
                     <Button
                       variant="danger"
-                      className="min-h-10 w-full text-sm"
+                      className="min-h-11 w-full text-sm"
                       disabled={isBusy}
                       onClick={() => setConfirmDeactivateId(user.id)}
                     >

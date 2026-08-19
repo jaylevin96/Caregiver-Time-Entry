@@ -108,14 +108,14 @@ export function DaysListCalendar({
   }
 
   return (
-    <div className="px-3 pb-4 sm:px-4">
+    <div className="px-2 pb-4 sm:px-4">
       <p className="text-text-muted mb-3 text-center text-[11px]">
         {readOnly
           ? 'Scroll to browse days · tap to view details'
           : 'Scroll to browse days · tap to log hours'}
       </p>
 
-      <div className="max-h-[calc(100dvh-14rem)] space-y-4 overflow-y-auto overscroll-contain">
+      <div className="max-h-[calc(100dvh-var(--app-header-height,8rem)-10rem)] space-y-4 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
         {grouped.map((group) => (
           <section key={group.key}>
             <h3 className="text-text-muted mb-2 px-1 text-xs font-semibold tracking-wide uppercase">

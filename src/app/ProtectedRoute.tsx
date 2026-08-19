@@ -19,7 +19,7 @@ function AccessMessage({
   const { signOut } = useAuth();
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center gap-4 px-6 text-center">
+    <div className="flex min-h-dvh flex-col items-center justify-center gap-4 px-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] pt-[max(3rem,env(safe-area-inset-top))] pb-[max(3rem,env(safe-area-inset-bottom))] text-center">
       <div>
         <h1 className="text-lg font-semibold">{title}</h1>
         <p className="text-text-muted mt-2 max-w-sm text-sm">{description}</p>

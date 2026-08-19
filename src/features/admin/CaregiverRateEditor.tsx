@@ -80,7 +80,7 @@ export function CaregiverRateEditor({
         </div>
         <Button
           variant="secondary"
-          className="min-h-10 shrink-0 px-3 text-sm"
+          className="min-h-11 shrink-0 px-3 text-sm"
           disabled={isBusy || unchanged}
           onClick={handleSave}
         >

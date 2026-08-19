@@ -13,7 +13,7 @@ export function AppShell({ title, subtitle, children, footer }: AppShellProps) {
 
   return (
     <div
-      className="flex min-h-dvh flex-col"
+      className="flex min-h-dvh flex-col pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]"
       style={
         {
           '--app-header-height':
@@ -29,7 +29,7 @@ export function AppShell({ title, subtitle, children, footer }: AppShellProps) {
               <p className="text-text-muted truncate text-sm">{subtitle}</p>
             ) : null}
           </div>
-          <Button variant="ghost" className="min-h-10 shrink-0 px-3 text-sm" onClick={signOut}>
+          <Button variant="ghost" className="min-h-11 shrink-0 px-3 text-sm" onClick={signOut}>
             Sign out
           </Button>
         </div>
@@ -49,7 +49,7 @@ export function AppShell({ title, subtitle, children, footer }: AppShellProps) {
       </main>
 
       {footer ? (
-        <footer className="pointer-events-none fixed inset-x-0 bottom-0 z-10 px-3 pb-[env(safe-area-inset-bottom)] sm:px-4">
+        <footer className="pointer-events-none fixed inset-x-0 bottom-0 z-10 pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pb-[env(safe-area-inset-bottom)] sm:pl-[max(1rem,env(safe-area-inset-left))] sm:pr-[max(1rem,env(safe-area-inset-right))]">
           <div className="pointer-events-auto mx-auto max-w-lg">{footer}</div>
         </footer>
       ) : null}

@@ -94,7 +94,7 @@ function PresetPill({
       onClick={onClick}
       aria-pressed={selected}
       className={[
-        'min-h-10 shrink-0 rounded-full px-4 text-sm font-medium transition-colors',
+        'min-h-11 shrink-0 rounded-full px-4 text-sm font-medium transition-colors',
         selected
           ? 'bg-accent text-white'
           : 'bg-surface text-text-muted border-border border',

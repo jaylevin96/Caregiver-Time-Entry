@@ -22,8 +22,8 @@ export function AuthField({
       <input
         className={[
           'border-border bg-surface-raised focus:border-accent focus:ring-accent/20 w-full min-w-0 border outline-none focus:ring-2',
-          compact
-            ? 'rounded-lg px-2 py-2 text-sm'
+            compact
+            ? 'rounded-lg px-2 py-2.5 text-base'
             : 'rounded-xl px-4 py-3 text-base',
           className,
         ]

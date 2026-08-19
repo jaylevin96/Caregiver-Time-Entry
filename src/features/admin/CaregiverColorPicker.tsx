@@ -30,7 +30,7 @@ export function CaregiverColorPicker({
               disabled={disabled}
               onClick={() => onChange(user.id, color)}
               className={[
-                'h-8 w-8 rounded-full transition-transform active:scale-95 disabled:opacity-50',
+                'h-10 w-10 rounded-full transition-transform active:scale-95 disabled:opacity-50',
                 selected ? 'ring-accent ring-2 ring-offset-2' : '',
               ].join(' ')}
               style={{ backgroundColor: color }}
@@ -39,7 +39,7 @@ export function CaregiverColorPicker({
         })}
         <label
           className={[
-            'border-border relative flex h-8 w-8 cursor-pointer items-center justify-center overflow-hidden rounded-full border',
+            'border-border relative flex h-10 w-10 cursor-pointer items-center justify-center overflow-hidden rounded-full border',
             disabled ? 'pointer-events-none opacity-50' : '',
           ].join(' ')}
           title="Custom color"
