@@ -51,11 +51,11 @@ export function CalendarViewSwitcher({
   );
 
   if (embedded) {
-    return <div className="px-2 pt-3 pb-1 sm:px-4">{tabs}</div>;
+    return <div className="px-2 pt-1 pb-2 sm:px-4">{tabs}</div>;
   }
 
   return (
-    <div className="bg-surface/95 supports-[backdrop-filter]:bg-surface/80 sticky top-[var(--app-header-height,calc(env(safe-area-inset-top)+4.5rem))] z-[9] px-2 pt-3 pb-1 backdrop-blur sm:px-4">
+    <div className="bg-surface/95 supports-[backdrop-filter]:bg-surface/80 sticky top-[var(--app-header-height,calc(env(safe-area-inset-top)+4.5rem))] z-[9] px-2 pt-1 pb-2 backdrop-blur sm:px-4">
       {tabs}
     </div>
   );

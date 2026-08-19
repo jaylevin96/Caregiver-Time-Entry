@@ -32,7 +32,7 @@ export function CaregiverFilter({
   }
 
   return (
-    <div className={embedded ? 'px-2 py-3 sm:px-4' : 'border-border border-b px-2 py-3 sm:px-4'}>
+    <div className={embedded ? 'px-2 pt-2 pb-0 sm:px-4' : 'border-border border-b px-2 py-3 sm:px-4'}>
       <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {showAllOption ? (
           <FilterPill
