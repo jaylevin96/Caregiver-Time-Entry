@@ -75,7 +75,7 @@ export function MonthCalendar({
   const isCurrentMonth = year === todayY && month === todayMonth;
 
   return (
-    <div className="px-3 py-3 sm:px-4 sm:py-4">
+    <div className="px-2 py-3 sm:px-4 sm:py-4">
       <div className="mb-3 flex items-center gap-2">
         <Button
           variant="secondary"

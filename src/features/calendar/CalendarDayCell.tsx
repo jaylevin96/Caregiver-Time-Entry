@@ -110,7 +110,9 @@ export function CalendarDayCell({
       style={isToday ? todayRingStyle : undefined}
       className={[
         'relative flex touch-manipulation flex-col overflow-hidden rounded-lg p-1 transition-transform active:scale-95',
-        isLarge ? 'min-h-[5.5rem] aspect-auto' : 'aspect-square',
+        isLarge
+          ? 'min-h-[6.5rem] aspect-auto sm:min-h-[5.75rem]'
+          : 'min-h-[5rem] aspect-auto sm:min-h-0 sm:aspect-square',
         inMonth ? '' : 'opacity-35',
         status === 'paid'
           ? 'bg-success/10'
@@ -167,7 +169,7 @@ export function CalendarDayCell({
                 key={pill.key}
                 title={pill.title}
                 className={[
-                  'truncate rounded-full px-1 text-center font-bold leading-tight tabular-nums',
+                  'shrink-0 truncate rounded-full px-1 text-center font-bold leading-tight tabular-nums',
                   isLarge ? 'py-0.5 text-xs' : 'py-px text-[11px]',
                 ].join(' ')}
                 style={{

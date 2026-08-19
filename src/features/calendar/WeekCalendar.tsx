@@ -70,7 +70,7 @@ export function WeekCalendar({
   });
 
   return (
-    <div className="px-3 pb-3 sm:px-4">
+    <div className="px-2 pb-3 sm:px-4">
       <div className="mb-3 flex items-center gap-2">
         <Button
           variant="secondary"
