@@ -3,6 +3,7 @@ import { AppShell } from '@/components/layout/AppShell';
 import { CalendarContainer } from '@/features/calendar/CalendarContainer';
 import { DayEntrySheet } from '@/features/time-entry/DayEntrySheet';
 import { useAuth } from '@/features/auth/useAuth';
+import { profileForCaregiverSelfView } from '@/lib/utils/calendar-colors';
 import type { TimeEntry } from '@/types/database';
 
 export function CaregiverHomePage() {
@@ -20,10 +21,9 @@ export function CaregiverHomePage() {
     <AppShell title="Calendar" subtitle={profile?.display_name}>
       <CalendarContainer
         caregiverId={profile?.id}
-        caregivers={profile ? [profile] : []}
+        caregivers={profile ? [profileForCaregiverSelfView(profile)] : []}
         onSelectDate={handleSelectDate}
         refreshSignal={refreshSignal}
-        accentColor={profile?.calendar_color}
       />
 
       <DayEntrySheet

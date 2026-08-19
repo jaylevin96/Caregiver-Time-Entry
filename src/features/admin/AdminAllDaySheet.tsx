@@ -10,6 +10,7 @@ import {
   getExpenseReimbursement,
 } from '@/lib/utils/expenses';
 import { getDayEntryStatus, getStatusLabel } from '@/lib/utils/entry-status';
+import { DEFAULT_CALENDAR_COLOR } from '@/lib/utils/calendar-colors';
 import type { Profile, TimeEntry, TimeEntryExpense } from '@/types/database';
 
 interface AdminAllDaySheetProps {
@@ -131,7 +132,7 @@ export function AdminAllDaySheet({
                 entry.time_entry_expenses,
               );
               const caregiver = caregiverById.get(entry.caregiver_id);
-              const color = caregiver?.calendar_color ?? '#2563eb';
+              const color = caregiver?.calendar_color ?? DEFAULT_CALENDAR_COLOR;
               const name = caregiver?.display_name ?? 'Unknown';
 
               return (

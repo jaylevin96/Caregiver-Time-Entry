@@ -14,7 +14,10 @@ import {
   type CalendarEntry,
   type DayEntryStatus,
 } from '@/lib/utils/entry-status';
-import { textColorForBackground } from '@/lib/utils/calendar-colors';
+import {
+  DEFAULT_CALENDAR_COLOR,
+  textColorForBackground,
+} from '@/lib/utils/calendar-colors';
 
 export interface CaregiverDayPill {
   key: string;
@@ -250,7 +253,7 @@ export function buildDayPills(
     byCaregiver.set(entry.caregiver_id, {
       hours,
       expense,
-      color: caregiver?.calendar_color ?? '#2563eb',
+      color: caregiver?.calendar_color ?? DEFAULT_CALENDAR_COLOR,
       displayName: caregiver?.display_name ?? 'Unknown',
     });
   }

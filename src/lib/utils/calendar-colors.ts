@@ -9,6 +9,16 @@ export const CALENDAR_COLOR_PRESETS = [
   '#ca8a04',
 ] as const;
 
+/** Default blue used for new caregivers and for a caregiver's own calendar. */
+export const DEFAULT_CALENDAR_COLOR = CALENDAR_COLOR_PRESETS[0];
+
+/** Assigned colors are for admin views; caregivers always see default blue. */
+export function profileForCaregiverSelfView<T extends { calendar_color: string }>(
+  profile: T,
+): T {
+  return { ...profile, calendar_color: DEFAULT_CALENDAR_COLOR };
+}
+
 export function isValidCalendarColor(value: string): boolean {
   return /^#[0-9A-Fa-f]{6}$/.test(value);
 }
