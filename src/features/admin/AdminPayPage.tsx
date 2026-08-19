@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { resolvePayCaregiverId } from '@/features/admin/admin-caregiver-filter';
 import { CaregiverFilter } from '@/features/admin/CaregiverFilter';
 import { useCaregivers } from '@/features/admin/useCaregivers';
 import { useDefaultHourlyRate } from '@/features/admin/useDefaultHourlyRate';
@@ -24,7 +25,15 @@ import {
 } from '@/lib/utils/dates';
 import type { CaregiverRate, Payment, TimeEntry, TimeEntryExpense } from '@/types/database';
 
-export function AdminPayPage() {
+interface AdminPayPageProps {
+  selectedCaregiverId: string;
+  onSelectCaregiver: (id: string) => void;
+}
+
+export function AdminPayPage({
+  selectedCaregiverId,
+  onSelectCaregiver,
+}: AdminPayPageProps) {
   const {
     payCaregivers: caregivers,
     unpaidCaregiverIds,
@@ -33,9 +42,6 @@ export function AdminPayPage() {
     refresh: refreshCaregivers,
   } = useCaregivers();
   const { defaultRate } = useDefaultHourlyRate();
-  const [selectedCaregiverId, setSelectedCaregiverId] = useState<string | null>(
-    null,
-  );
   const [periodStart, setPeriodStart] = useState('');
   const [periodEnd, setPeriodEnd] = useState('');
   const [entries, setEntries] = useState<TimeEntry[]>([]);
@@ -57,8 +63,10 @@ export function AdminPayPage() {
     null,
   );
 
-  const activeCaregiverId =
-    selectedCaregiverId ?? caregivers[0]?.id ?? undefined;
+  const activeCaregiverId = resolvePayCaregiverId(
+    selectedCaregiverId,
+    caregivers.map((caregiver) => caregiver.id),
+  );
 
   const activeCaregiver = caregivers.find((c) => c.id === activeCaregiverId);
 
@@ -273,7 +281,7 @@ export function AdminPayPage() {
           <CaregiverFilter
             caregivers={caregivers}
             selectedId={activeCaregiverId ?? null}
-            onSelect={setSelectedCaregiverId}
+            onSelect={onSelectCaregiver}
             unpaidIds={unpaidCaregiverIds}
           />
 

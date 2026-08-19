@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { NavLink, Route, Routes } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/features/auth/useAuth';
+import { ALL_CAREGIVERS_ID } from '@/features/admin/CaregiverFilter';
 import { AdminCalendarPage } from '@/features/admin/AdminCalendarPage';
 import { AdminPayPage } from '@/features/admin/AdminPayPage';
 import { AdminSettingsPage } from '@/features/admin/AdminSettingsPage';
@@ -8,6 +10,8 @@ import { AdminUsersPage } from '@/features/admin/AdminUsersPage';
 
 export function AdminHomePage() {
   const { profile } = useAuth();
+  const [selectedCaregiverId, setSelectedCaregiverId] =
+    useState(ALL_CAREGIVERS_ID);
 
   return (
     <AppShell
@@ -16,8 +20,24 @@ export function AdminHomePage() {
       footer={<AdminNav />}
     >
       <Routes>
-        <Route index element={<AdminCalendarPage />} />
-        <Route path="pay" element={<AdminPayPage />} />
+        <Route
+          index
+          element={
+            <AdminCalendarPage
+              selectedCaregiverId={selectedCaregiverId}
+              onSelectCaregiver={setSelectedCaregiverId}
+            />
+          }
+        />
+        <Route
+          path="pay"
+          element={
+            <AdminPayPage
+              selectedCaregiverId={selectedCaregiverId}
+              onSelectCaregiver={setSelectedCaregiverId}
+            />
+          }
+        />
         <Route path="users" element={<AdminUsersPage />} />
         <Route path="settings" element={<AdminSettingsPage />} />
       </Routes>

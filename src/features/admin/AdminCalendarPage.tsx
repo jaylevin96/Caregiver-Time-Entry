@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { resolveCalendarCaregiverId } from '@/features/admin/admin-caregiver-filter';
 import { AdminAllDaySheet } from '@/features/admin/AdminAllDaySheet';
 import {
   ALL_CAREGIVERS_ID,
@@ -12,7 +13,15 @@ import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { InlineSpinner } from '@/components/ui/InlineSpinner';
 import type { TimeEntry } from '@/types/database';
 
-export function AdminCalendarPage() {
+interface AdminCalendarPageProps {
+  selectedCaregiverId: string;
+  onSelectCaregiver: (id: string) => void;
+}
+
+export function AdminCalendarPage({
+  selectedCaregiverId,
+  onSelectCaregiver,
+}: AdminCalendarPageProps) {
   const {
     profiles,
     caregivers,
@@ -21,15 +30,15 @@ export function AdminCalendarPage() {
     error: caregiversError,
     refresh,
   } = useCaregivers();
-  const [selectedCaregiverId, setSelectedCaregiverId] = useState<string | null>(
-    ALL_CAREGIVERS_ID,
-  );
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedEntry, setSelectedEntry] = useState<TimeEntry | undefined>();
   const [detailEntry, setDetailEntry] = useState<TimeEntry | undefined>();
 
   const filterCaregivers = payCaregivers.length > 0 ? payCaregivers : caregivers;
-  const activeFilterId = selectedCaregiverId ?? ALL_CAREGIVERS_ID;
+  const activeFilterId = resolveCalendarCaregiverId(
+    selectedCaregiverId,
+    filterCaregivers.map((caregiver) => caregiver.id),
+  );
   const showAllCaregivers = activeFilterId === ALL_CAREGIVERS_ID;
   const activeCaregiver = profiles.find(
     (caregiver) => caregiver.id === activeFilterId,
@@ -42,7 +51,7 @@ export function AdminCalendarPage() {
   }
 
   function handleFilterSelect(id: string) {
-    setSelectedCaregiverId(id);
+    onSelectCaregiver(id);
     setSelectedDate(null);
     setSelectedEntry(undefined);
     setDetailEntry(undefined);
