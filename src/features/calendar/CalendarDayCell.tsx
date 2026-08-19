@@ -142,18 +142,31 @@ export function CalendarDayCell({
         .filter(Boolean)
         .join(' ')}
     >
-      <span
-        className={[
-          'flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-semibold leading-none',
-          isToday && !accentColor ? 'bg-accent text-white' : 'text-text',
-        ].join(' ')}
-        style={
-          isToday && accentColor
-            ? { backgroundColor: accentColor, color: '#ffffff' }
-            : undefined
-        }
-      >
-        {dayNum}
+      <span className="flex h-5 w-full shrink-0 items-center">
+        <span
+          className={[
+            'flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-semibold leading-none',
+            isToday && !accentColor ? 'bg-accent text-white' : 'text-text',
+          ].join(' ')}
+          style={
+            isToday && accentColor
+              ? { backgroundColor: accentColor, color: '#ffffff' }
+              : undefined
+          }
+        >
+          {dayNum}
+        </span>
+        {badge ? (
+          <span
+            className={[
+              'ml-auto mr-0.5 h-2 w-2 shrink-0 rounded-full',
+              status === 'paid'
+                ? 'bg-success'
+                : 'ring-success bg-transparent ring-2',
+            ].join(' ')}
+            aria-hidden="true"
+          />
+        ) : null}
       </span>
 
       <span className="flex min-h-0 flex-1 items-center justify-center overflow-hidden">
@@ -209,16 +222,6 @@ export function CalendarDayCell({
           </span>
         ) : null}
       </span>
-
-      {badge ? (
-        <span
-          className={[
-            'absolute right-1 bottom-1 h-2 w-2 rounded-full',
-            status === 'paid' ? 'bg-success' : 'ring-success bg-transparent ring-2',
-          ].join(' ')}
-          aria-hidden="true"
-        />
-      ) : null}
     </button>
   );
 }
